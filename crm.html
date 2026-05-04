@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELLIOT CRM — FC Rouen</title>
+<script src="initial-data.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root {
+  --red:#c8102e; --red-dark:#9b0c23; --red-light:#fde8ec;
+  --bg:#f2f4f7; --sidebar:#16192b; --sidebar-txt:#9ca3af;
+  --white:#fff; --text:#1c1f2e; --muted:#6b7280;
+  --border:#e5e7eb; --shadow:0 1px 4px rgba(0,0,0,.08);
+  --radius:10px;
+  --green:#16a34a; --orange:#d97706; --blue:#2563eb; --purple:#7c3aed;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{width:230px;min-width:230px;background:var(--sidebar);display:flex;flex-direction:column;height:100vh;overflow-y:auto;transition:transform .25s}
+.logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.logo .badge{background:var(--red);color:#fff;font-weight:800;font-size:13px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text span{color:#fff;font-weight:700;font-size:14px;display:block}
+.logo-text small{color:var(--sidebar-txt);font-size:11px}
+nav{padding:8px 0 12px;flex:1}
+.nav-section{padding:14px 16px 5px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(156,163,175,.55)}
+nav a{display:flex;align-items:center;gap:9px;padding:8px 16px;color:var(--sidebar-txt);text-decoration:none;font-size:13px;font-weight:500;border-left:3px solid transparent;transition:all .15s;cursor:pointer;border-radius:0 6px 6px 0;margin:1px 8px 1px 0}
+nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+nav a.active{color:#fff;border-left-color:var(--red);background:rgba(200,16,46,.15)}
+nav a .icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+nav a .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;min-width:18px;text-align:center}
+.sidebar-footer{padding:12px 16px;border-top:1px solid rgba(255,255,255,.07);color:var(--sidebar-txt);font-size:11.5px}
+.sidebar-footer strong{color:#fff;display:block;margin-bottom:2px}
+
+/* ── TOPBAR ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px}
+#topbar h1{font-size:17px;font-weight:700;white-space:nowrap}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow-y:auto;padding:24px}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--red);color:#fff}.btn-primary:hover{background:var(--red-dark)}
+.btn-secondary{background:#fff;color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--bg)}
+.btn-ghost{background:transparent;color:var(--muted);border:none;padding:5px 8px}.btn-ghost:hover{background:var(--bg);color:var(--text)}
+.btn-sm{padding:4px 9px;font-size:12px}
+.btn-danger{background:#fee2e2;color:#dc2626}.btn-danger:hover{background:#fecaca}
+.btn-green{background:#dcfce7;color:#15803d}.btn-green:hover{background:#bbf7d0}
+.btn-icon{padding:6px;border-radius:6px}
+
+/* ── STATUS BADGES ── */
+.badge-s{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.badge-s::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.s-a_contacter{background:#f1f5f9;color:#475569}
+.s-contacte{background:#e0f2fe;color:#0369a1}
+.s-offre_envoyee{background:#fef3c7;color:#92400e}
+.s-rdv_fixe{background:#ede9fe;color:#5b21b6}
+.s-signe{background:#dcfce7;color:#15803d}
+.s-a_renouveler{background:#fce7f3;color:#9d174d}
+.s-saison_pro{background:#f0fdf4;color:#166534}
+.s-perdu{background:#fee2e2;color:#dc2626}
+
+/* ── CARDS ── */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-header h2{font-size:14px;font-weight:700}
+.card-body{padding:18px}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px 18px}
+.stat-card .s-label{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:6px}
+.stat-card .s-val{font-size:26px;font-weight:800}
+.stat-card .s-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.s-val.c-red{color:var(--red)}.s-val.c-green{color:var(--green)}.s-val.c-orange{color:var(--orange)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:700px}
+th{padding:9px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#fafbfc;cursor:pointer}
+.td-name{font-weight:600}
+.td-amt{font-weight:700;color:var(--red)}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.search-box{flex:1;min-width:180px;display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);border-radius:7px;padding:6px 11px}
+.search-box input{border:none;outline:none;flex:1;font-size:13px;background:transparent}
+select.flt{border:1px solid var(--border);background:#fff;border-radius:7px;padding:6px 10px;font-size:12.5px;color:var(--text);cursor:pointer;outline:none}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:700px;max-width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.22);display:flex;flex-direction:column}
+.modal-sm{width:480px}
+.modal-hd{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;flex-shrink:0}
+.modal-hd h3{font-size:15px;font-weight:700}
+.modal-bd{padding:22px;flex:1}
+.modal-ft{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+
+/* ── FORMS ── */
+.frow{display:grid;gap:14px;margin-bottom:14px}
+.frow.c2{grid-template-columns:1fr 1fr}
+.frow.c3{grid-template-columns:1fr 1fr 1fr}
+.frow.c4{grid-template-columns:1fr 1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.fg input,.fg select,.fg textarea{border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:13px;color:var(--text);outline:none;transition:border .15s;font-family:inherit;background:#fff}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--red)}
+.fg textarea{resize:vertical;min-height:60px}
+.fsection{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text);padding-bottom:8px;border-bottom:2px solid var(--red);display:inline-block;margin-bottom:14px;margin-top:8px}
+
+/* ── PARTNERSHIP GRID ── */
+.part-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.part-item{background:var(--bg);border-radius:8px;padding:11px 13px;border:1px solid var(--border)}
+.part-item .pl{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.part-item .pv{font-size:18px;font-weight:800;color:var(--red)}
+.part-total{background:linear-gradient(135deg,var(--red),var(--red-dark));color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.part-total .ptl{font-size:12.5px;font-weight:600;opacity:.9}
+.part-total .ptv{font-size:20px;font-weight:800}
+
+/* ── PIPELINE ── */
+.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.pcol{background:var(--bg);border-radius:var(--radius);padding:11px}
+.pcol-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:9px;display:flex;justify-content:space-between;align-items:center}
+.pcol-hd .cnt{background:#fff;border:1px solid var(--border);border-radius:20px;padding:1px 6px;font-size:10.5px}
+.pcard{background:#fff;border-radius:8px;border:1px solid var(--border);padding:9px 11px;margin-bottom:7px;cursor:pointer;transition:all .15s}
+.pcard:hover{box-shadow:0 2px 8px rgba(0,0,0,.1);transform:translateY(-1px)}
+.pcard .pc-name{font-size:12.5px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .pc-amt{font-size:11.5px;color:var(--red);font-weight:700}
+.pcard .pc-src{font-size:10.5px;color:var(--muted);margin-top:2px}
+
+/* ── AGENDA ── */
+.agenda-item{display:flex;gap:11px;padding:11px 13px;background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:9px;cursor:pointer;transition:all .15s}
+.agenda-item:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.agenda-item.done{opacity:.45}
+.ai-date{background:var(--red);color:#fff;border-radius:7px;min-width:42px;text-align:center;padding:5px 3px;flex-shrink:0}
+.ai-date .day{font-size:18px;font-weight:800;line-height:1}
+.ai-date .mo{font-size:9.5px;text-transform:uppercase;letter-spacing:.3px}
+.ai-body{flex:1;min-width:0}
+.ai-title{font-size:13.5px;font-weight:600;margin-bottom:1px}
+.ai-co{font-size:12px;color:var(--muted)}
+.ai-time{font-size:11.5px;color:var(--red);font-weight:600;margin-top:2px}
+.overdue .ai-date{background:#dc2626}
+.today .ai-date{background:var(--orange)}
+.overdue-lbl{color:#dc2626;font-size:11px;font-weight:700}
+.today-lbl{color:var(--orange);font-size:11px;font-weight:700}
+
+/* ── HISTORY ── */
+.h-item{display:flex;gap:10px;padding:9px 11px;background:var(--bg);border-radius:7px;margin-bottom:6px;align-items:flex-start}
+.h-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.h-content .h-date{font-size:11px;color:var(--muted);font-weight:600}
+.h-content .h-note{font-size:13px;color:var(--text);margin-top:1px}
+.h-add{display:flex;gap:7px;margin-top:10px;align-items:center}
+
+/* ── CHIPS ── */
+.chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:11.5px;color:var(--muted);font-weight:500}
+.chip.red{background:var(--red-light);border-color:var(--red);color:var(--red)}
+
+/* ── AVATAR ── */
+.avatar{width:36px;height:36px;border-radius:8px;background:var(--red-light);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--red);flex-shrink:0}
+.avatar-lg{width:50px;height:50px;font-size:17px;border-radius:10px}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px}
+.tab{padding:8px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty .ei{font-size:40px;margin-bottom:10px}
+.empty h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+.empty p{font-size:13px}
+
+/* ── ALERT ── */
+.alert{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
+.alert-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+
+/* ── SAISON BADGE ── */
+.saison-badge{display:inline-flex;align-items:center;padding:2px 8px;background:#f0fdf4;border:1px solid #86efac;border-radius:20px;font-size:11px;font-weight:700;color:#15803d}
+
+/* ── MOBILE ── */
+#burger{display:none;background:none;border:none;cursor:pointer;font-size:20px;padding:4px}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}
+
+@media(max-width:768px){
+  #burger{display:block}
+  #sidebar{position:fixed;left:0;top:0;z-index:100;transform:translateX(-100%)}
+  #sidebar.open{transform:translateX(0)}
+  #sidebar-overlay.open{display:block}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .pipeline{grid-template-columns:1fr 1fr;overflow-x:auto}
+  .frow.c2,.frow.c3,.frow.c4{grid-template-columns:1fr}
+  .part-grid{grid-template-columns:1fr 1fr}
+  #content{padding:14px}
+  #topbar{padding:0 14px}
+  .topbar-right .btn span{display:none}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+  .pipeline{grid-template-columns:1fr}
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px}
+
+/* ── FRESHNESS (indicateur dernier contact) ── */
+.tr-fresh>td:first-child{border-left:3px solid #16a34a}
+.tr-warm>td:first-child{border-left:3px solid #d97706}
+.tr-cold>td:first-child{border-left:3px solid #dc2626}
+.freshness-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.fd-green{background:#16a34a}.fd-orange{background:#d97706}.fd-red{background:#dc2626}.fd-gray{background:#9ca3af}
+
+/* ── BULK ACTIONS ── */
+.bulk-bar{background:var(--red);color:#fff;padding:9px 18px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;flex-wrap:wrap}
+.bulk-bar .btn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.bulk-bar .btn:hover{background:rgba(255,255,255,.25)}
+input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--red);flex-shrink:0}
+
+/* ── GLOBAL SEARCH ── */
+.gsearch-wrap{position:relative;flex:1;max-width:300px}
+.gsearch-input{width:100%;padding:6px 10px 6px 30px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;background:#f8f9fb;font-family:inherit}
+.gsearch-input:focus{background:#fff;border-color:var(--red)}
+.gsearch-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--muted);pointer-events:none}
+.gsearch-results{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;max-height:320px;overflow-y:auto;display:none}
+.gsearch-results.open{display:block}
+.gsearch-item{padding:9px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;border-bottom:1px solid #f3f4f6}
+.gsearch-item:last-child{border-bottom:none}
+.gsearch-item:hover{background:#fafafa}
+.gsearch-match{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── FOCUS DU JOUR ── */
+.focus-card{background:#fff;border:1px solid var(--border);border-radius:9px;padding:12px 15px;margin-bottom:7px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:box-shadow .15s}
+.focus-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.focus-card.fc-urgent{border-left:3px solid #dc2626}
+.focus-card.fc-today{border-left:3px solid #d97706}
+.focus-card.fc-normal{border-left:3px solid #9ca3af}
+
+/* ── ACTIVITÉ FEED ── */
+.feed-item{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);align-items:flex-start}
+.feed-item:last-child{border-bottom:none}
+.feed-ico{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.feed-co{font-weight:700;font-size:13px}
+.feed-note{font-size:12.5px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px}
+.feed-date{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;margin-left:auto}
+
+/* ── WEEKLY SUMMARY ── */
+.week-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
+.week-stat{text-align:center;padding:12px 8px;background:var(--bg);border-radius:8px}
+.week-stat .wv{font-size:22px;font-weight:800;color:var(--red)}
+.week-stat .wl{font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:3px}
+
+/* ── PIPELINE PRÉVISIONNEL ── */
+.forecast-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.forecast-bar{flex:1;background:var(--bg);border-radius:20px;height:8px;overflow:hidden;margin:0 10px}
+.forecast-fill{height:100%;border-radius:20px;transition:width .4s}
+
+/* ── TEMPLATES MESSAGES ── */
+.tpl-card{background:var(--bg);border-radius:9px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border)}
+.tpl-card h4{font-size:13.5px;font-weight:700;margin-bottom:2px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tpl-ctx{font-size:11.5px;color:var(--muted);margin-bottom:8px}
+.tpl-body{font-size:12.5px;color:#374151;white-space:pre-wrap;line-height:1.65;background:#fff;border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:inherit;max-height:130px;overflow-y:auto}
+.tpl-vars{font-size:11px;color:var(--blue);margin-top:5px}
+
+/* ── SCORE DE PRIORITÉ ── */
+.score-badge{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;font-size:11.5px;font-weight:800;flex-shrink:0}
+.sb-hot{background:#fee2e2;color:#dc2626}
+.sb-warm{background:#fef3c7;color:#b45309}
+.sb-cool{background:#eff6ff;color:#2563eb}
+.sb-cold{background:#f1f5f9;color:#9ca3af}
+
+/* ── ÉTOILES D'INTÉRÊT ── */
+.stars{color:#f59e0b;font-size:11px;letter-spacing:-1px}
+.decision-yes{color:#16a34a;font-size:11px;font-weight:700}
+.decision-no{color:#dc2626;font-size:11px;font-weight:700}
+
+/* ── ENTONNOIR ── */
+.funnel-step{margin-bottom:11px}
+.funnel-bar{background:var(--bg);border-radius:20px;height:12px;overflow:hidden;margin-top:5px}
+.funnel-fill{height:100%;border-radius:20px;transition:width .5s}
+.funnel-arrow{text-align:center;font-size:11px;color:var(--muted);margin-bottom:2px}
+
+/* ── OBJECTIF APPELS ── */
+.calls-progress{background:var(--bg);border-radius:20px;height:10px;overflow:hidden;margin-top:6px}
+.calls-fill{height:100%;border-radius:20px;transition:width .5s}
+
+/* ── LAST ACTIVITY BADGE ── */
+.days-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:10px;font-size:10.5px;font-weight:700;white-space:nowrap}
+.db-green{background:#dcfce7;color:#15803d}
+.db-orange{background:#fef3c7;color:#92400e}
+.db-red{background:#fee2e2;color:#dc2626}
+.db-gray{background:#f1f5f9;color:#6b7280}
+
+/* ── IMPORT CSV ── */
+.csv-area{width:100%;border:2px dashed var(--border);border-radius:8px;padding:14px;font-size:12.5px;font-family:monospace;min-height:140px;outline:none;transition:border .15s;resize:vertical}
+.csv-area:focus{border-color:var(--red)}
+.import-preview{max-height:200px;overflow-y:auto;margin-top:10px}
+.import-preview table{min-width:100%;font-size:11.5px}
+.import-preview th,.import-preview td{padding:5px 8px}
+.import-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
+.ib-signe{background:#dcfce7;color:#15803d}
+.ib-perdu{background:#fee2e2;color:#dc2626}
+.ib-contacte{background:#e0f2fe;color:#0369a1}
+.ib-other{background:#f1f5f9;color:#475569}
+</style>
+</head>
+<body>
+
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div id="sidebar">
+  <div class="logo">
+    <div class="badge">FC</div>
+    <div class="logo-text"><span>ELLIOT CRM</span><small>FC Rouen</small></div>
+  </div>
+  <nav>
+    <div class="nav-section">Tableau de bord</div>
+    <a class="active" onclick="showView('dashboard',this)"><span class="icon">📊</span>Vue d'ensemble</a>
+    <a onclick="showView('focus',this)" id="nav-focus"><span class="icon">🎯</span>Focus du jour</a>
+
+    <div class="nav-section">Activité</div>
+    <a onclick="showView('agenda',this)"><span class="icon">📅</span>Agenda & Rappels</a>
+    <a onclick="showView('relances',this)" id="nav-relances"><span class="icon">🔁</span>Relances</a>
+    <a onclick="showView('activite',this)"><span class="icon">📋</span>Activité globale</a>
+
+    <div class="nav-section">Partenariats</div>
+    <a onclick="showView('contacts',this)"><span class="icon">🏢</span>Entreprises</a>
+    <a onclick="showView('pipeline',this)"><span class="icon">📋</span>Pipeline</a>
+
+    <div class="nav-section">Commercial</div>
+    <a onclick="showView('stats',this)"><span class="icon">📈</span>Statistiques</a>
+    <a onclick="showView('objectifs',this)"><span class="icon">🎯</span>Objectifs saison</a>
+    <a onclick="showView('messages',this)"><span class="icon">💬</span>Modèles messages</a>
+  </nav>
+  <div class="sidebar-footer">
+    <strong>Commercial FC Rouen</strong>
+    Saison 2025-2026
+  </div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="burger" onclick="toggleSidebar()">☰</button>
+      <h1 id="page-title">Tableau de bord</h1>
+    </div>
+    <div class="gsearch-wrap" id="gsearch-wrap">
+      <span class="gsearch-icon">🔍</span>
+      <input class="gsearch-input" id="gsearch-input" type="text" placeholder="Recherche globale…" oninput="onGlobalSearch(this.value)" onfocus="showGsearchResults()" onblur="setTimeout(hideGsearchResults,200)">
+      <div class="gsearch-results" id="gsearch-results"></div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost btn-icon" onclick="showView('agenda',null)" title="Rappels" style="position:relative">
+        🔔<span id="notif-dot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:var(--red);border-radius:50%;border:2px solid #fff"></span>
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="forceSyncFirebase()" title="Envoyer vos données locales vers Firebase">☁️ Sync</button>
+      <button class="btn btn-secondary btn-sm" onclick="openImport()">⬆ Import</button>
+      <button class="btn btn-primary" onclick="openNewCompany()"><span>+</span><span>Nouvelle entreprise</span></button>
+    </div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<!-- MODAL: Entreprise (create/edit) -->
+<div class="overlay" id="m-company">
+  <div class="modal">
+    <div class="modal-hd"><h3 id="m-company-title">Nouvelle entreprise</h3><button class="btn btn-ghost" onclick="closeModal('m-company')">✕</button></div>
+    <div class="modal-bd" id="m-company-body"></div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('m-company')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCompany()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Rappel -->
+<div class="overlay" id="m-event">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><h3>Nouveau rappel</h3><button class="btn btn-ghost" onclick="closeModal('m-event')">✕</button></div>
+    <div class="modal-bd" id="m-event-body"></div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('m-event')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Relance rapide -->
+<div class="overlay" id="m-relance">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><h3>🔁 Nouvelle relance</h3><button class="btn btn-ghost" onclick="closeModal('m-relance')">✕</button></div>
+    <div class="modal-bd" style="padding:18px;display:flex;flex-direction:column;gap:14px">
+      <div class="fg"><label>Entreprise *</label><select id="rel-co" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></select></div>
+      <div class="fg"><label>Date *</label><input id="rel-date" type="date" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></div>
+      <div class="fg"><label>Note</label><input id="rel-note" type="text" placeholder="Ex: rappeler pour devis LED…" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('m-relance')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveRelance()">Créer la relance</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Fiche détail -->
+<div class="overlay" id="m-detail">
+  <div class="modal" style="width:760px">
+    <div class="modal-hd">
+      <h3 id="m-detail-title">Fiche entreprise</h3>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-secondary btn-sm" id="detail-edit-btn">✏️ Modifier</button>
+        <button class="btn btn-ghost" onclick="closeModal('m-detail')">✕</button>
+      </div>
+    </div>
+    <div class="modal-bd" id="m-detail-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: Log d'appel rapide -->
+<div class="overlay" id="m-quicklog">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><h3 id="ql-title">📞 Log rapide</h3><button class="btn btn-ghost" onclick="closeModal('m-quicklog')">✕</button></div>
+    <div class="modal-bd" style="padding:18px;display:flex;flex-direction:column;gap:12px">
+      <div style="background:var(--bg);border-radius:8px;padding:10px 13px">
+        <div style="font-size:13px;font-weight:700" id="ql-coname">—</div>
+        <div style="font-size:11.5px;color:var(--muted)" id="ql-costatus">—</div>
+      </div>
+      <div class="frow c2" style="margin-bottom:0">
+        <div class="fg"><label>Type</label>
+          <select id="ql-type">
+            <option value="appel">📞 Appel</option>
+            <option value="email">📧 Email</option>
+            <option value="rdv">🤝 RDV</option>
+            <option value="relance">🔁 Relance</option>
+            <option value="note">📝 Note</option>
+          </select>
+        </div>
+        <div class="fg"><label>Nouveau statut</label>
+          <select id="ql-status"></select>
+        </div>
+      </div>
+      <div class="fg"><label>Note *</label><input id="ql-note" type="text" placeholder="Ex: Intéressé, rappeler semaine prochaine…" onkeydown="if(event.key==='Enter')saveCallLog()"></div>
+      <div id="ql-rdv-fields" style="display:none;flex-direction:column;gap:10px">
+        <div class="fg"><label>Objections / freins évoqués</label><input id="ql-objections" type="text" placeholder="Ex: Budget serré, doit en parler au DG…"></div>
+        <div class="fg"><label>Budget évoqué (€)</label><input id="ql-budget" type="number" placeholder="0"></div>
+        <div class="fg"><label>Prochaine étape convenue</label><input id="ql-nextstep" type="text" placeholder="Ex: Envoi plaquette, RDV le…"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="ql-remind">
+        <label for="ql-remind" style="font-size:13px;cursor:pointer">Créer un rappel dans</label>
+        <select id="ql-remind-days" style="border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12.5px">
+          <option value="1">1 jour</option>
+          <option value="3" selected>3 jours</option>
+          <option value="7">7 jours</option>
+          <option value="14">14 jours</option>
+          <option value="30">30 jours</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-secondary" onclick="closeModal('m-quicklog')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveCallLog()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Import -->
+<div class="overlay" id="m-import">
+  <div class="modal" style="width:680px">
+    <div class="modal-hd"><h3>Importer des données</h3><button class="btn btn-ghost" onclick="closeModal('m-import')">✕</button></div>
+    <div class="modal-bd" id="m-import-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDs8m8UExfjl-eHHFYefBHFx5ulxnxUQCo",
+  authDomain: "elliot-crm.firebaseapp.com",
+  databaseURL: "https://elliot-crm-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "elliot-crm",
+  storageBucket: "elliot-crm.firebasestorage.app",
+  messagingSenderId: "873766942467",
+  appId: "1:873766942467:web:8536d449f632601731db36"
+};
+firebase.initializeApp(firebaseConfig);
+const CRM_REF = firebase.database().ref('crm');
+
+
+const STATUS = {
+  a_contacter:  'À contacter',
+  contacte:     'Contacté',
+  offre_envoyee:'Offre envoyée',
+  rdv_fixe:     'RDV fixé',
+  signe:        '✓ Signé',
+  a_renouveler: 'À renouveler',
+  saison_pro:   'Saison prochaine',
+  perdu:        'Perdu'
+};
+
+const SOURCES = ['terrain','téléphone','mail','linkedin','autre'];
+const PIPELINE_WEIGHTS = {a_contacter:0,contacte:10,offre_envoyee:35,rdv_fixe:55,signe:100,a_renouveler:80,saison_pro:15,perdu:0};
+const MSG_TEMPLATES = [
+  {id:'first_contact',title:'📞 Premier contact téléphonique',ctx:'Après avoir décroché ou laissé un message',
+   body:`Bonjour {PRENOM},\n\nJe suis {MON_PRENOM}, commercial au FC Rouen. Je vous contacte car nous recherchons des partenaires locaux pour la saison 2025-2026.\n\nNous proposons plusieurs formules de visibilité adaptées à chaque budget : LED, places VIP, Bodega…\n\nSeriez-vous disponible pour un échange de 10 minutes cette semaine ?\n\nCordialement,\n{MON_PRENOM} — FC Rouen`},
+  {id:'relance_offre',title:'📧 Relance après envoi d\'offre',ctx:'Aucune réponse après 7 jours',
+   body:`Bonjour {PRENOM},\n\nJe me permets de revenir vers vous suite à l'offre de partenariat que je vous ai adressée il y a quelques jours.\n\nAvez-vous eu l'occasion d'en prendre connaissance ? Je suis disponible pour répondre à vos questions et affiner la proposition.\n\nBonne journée,\n{MON_PRENOM} — FC Rouen`},
+  {id:'post_rdv',title:'🤝 Message post-RDV',ctx:'Dans les 24h après un rendez-vous',
+   body:`Bonjour {PRENOM},\n\nMerci pour notre échange d'aujourd'hui — c'était un plaisir de vous présenter le projet FC Rouen.\n\nComme convenu, je vous transmets {ELEMENTS_A_ENVOYER}.\n\nN'hésitez pas si vous avez des questions.\n\nCordialement,\n{MON_PRENOM}`},
+  {id:'signature_imminente',title:'✅ Relance — signature imminente',ctx:'Quand le prospect hésite encore',
+   body:`Bonjour {PRENOM},\n\nJe reviens vers vous concernant notre partenariat FC Rouen 2025-2026.\n\nLes formules se remplissent et je voudrais m'assurer de vous réserver la vôtre. Pouvez-vous me confirmer votre décision avant la fin de la semaine ?\n\nAu plaisir,\n{MON_PRENOM} — FC Rouen`},
+  {id:'remerciement',title:'🎉 Remerciement après signature',ctx:'Dès le contrat signé',
+   body:`Bonjour {PRENOM},\n\nMerci pour votre confiance ! Nous sommes ravis de vous compter parmi les partenaires du FC Rouen pour la saison 2025-2026.\n\nVous recevrez prochainement tous les détails pratiques de votre partenariat.\n\nÀ très bientôt sur les matchs !\n{MON_PRENOM} — FC Rouen`},
+  {id:'renouvellement',title:'🔄 Proposition de renouvellement',ctx:'Pour les partenaires à renouveler',
+   body:`Bonjour {PRENOM},\n\nJ'espère que votre partenariat avec le FC Rouen s'est passé au mieux cette saison.\n\nJe souhaitais vous contacter en priorité pour vous proposer le renouvellement pour 2026-2027, avec de nouvelles opportunités de visibilité.\n\nSeriez-vous disponible pour en discuter ?\n\nCordialement,\n{MON_PRENOM} — FC Rouen`}
+];
+const ZONES = ['Rouen Centre','Sotteville','Petit-Quevilly','Grand-Quevilly','Mont-Saint-Aignan','Maromme','Technopôle','Tourville','VDR','Autre'];
+const TYPE_ICONS = {appel:'📞',email:'📧',rdv:'🤝',relance:'🔁',note:'📝',rappel:'📌'};
+
+// Pre-loaded signed contracts from your files
+const SIGNED_CONTRACTS = [
+  {name:'SNPS',sector:'Nettoyage',size:'PME',saison:'2025-2026',led:3800,led_d:'6 min visibilité LED',vip:900,vip_d:'6 Places VIP',notes:'2 contrats signés sur la saison'},
+  {name:'ARTBAT',sector:'BTP',size:'PME',saison:'2025-2026',vip:3360,vip_d:'4 Places VIP à l\'année + 1 Place VIP'},
+  {name:'Langlois Thermie Services',sector:'Entreprise',size:'PME',saison:'2025-2026',led:3000,led_d:'3 min LED + 2 Places VIP/match',vip:150,vip_d:'1 Place VIP'},
+  {name:'Nechirvan Construction',sector:'Construction',size:'TPE',saison:'2025-2026',bache:1000,bache_d:'Bâche 2x1m'},
+  {name:'Alto Peinture',sector:'Peinture',size:'TPE',saison:'2025-2026',bodega:712,bodega_d:'8 Places Bodega'},
+  {name:'M-LOC',sector:'TP',size:'PME',saison:'2025-2026',bodega:1157,bodega_d:'13 Places Bodega + 3 Parkings'},
+  {name:'Litt Diffusion',sector:'Entreprise',size:'TPE',saison:'2025-2026',bodega:267,bodega_d:'3 Places Bodega'},
+  {name:'MGD',sector:'Entreprise',size:'TPE',saison:'2025-2026',bodega:445,bodega_d:'5 Places Bodega'},
+  {name:'O Facade',sector:'Façade',size:'TPE',saison:'2025-2026',bodega:178,bodega_d:'2 Places Bodega'},
+  {name:'Kaan Sirin',sector:'Entreprise',size:'TPE',saison:'2025-2026',bodega:178,bodega_d:'2 Places Bodega'},
+  {name:'Ouest REMEDIATION',sector:'Entreprise',size:'PME',saison:'2025-2026',bodega:534,bodega_d:'6 Places Bodega'},
+  {name:'LHH',sector:'Cabinet recrutement',size:'PME',saison:'2025-2026',autre:0,notes:'Partenaire confirmé'},
+];
+
+// ═══════════════════════════════════════════════════════════
+// DATA LAYER
+// ═══════════════════════════════════════════════════════════
+let db={companies:[],events:[]};
+function loadDB(){}
+function saveDB(){
+  CRM_REF.set(db);
+  try{localStorage.setItem('elliot_crm_v2',JSON.stringify(db))}catch(e){}
+}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function priorityScore(c){
+  if(['perdu','signe'].includes(c.status))return 0;
+  let s=0;
+  const base={offre_envoyee:35,rdv_fixe:30,a_renouveler:25,contacte:20,a_contacter:10,saison_pro:5};
+  s+=base[c.status]||0;
+  const lastH=c.history?.slice(-1)[0];
+  const days=lastH?Math.floor((Date.now()-new Date(lastH.date))/864e5):999;
+  if(days>30)s+=30;else if(days>14)s+=20;else if(days>7)s+=10;
+  const overdue=db.events.filter(e=>e.companyId===c.id&&!e.done&&isOverdue(e.date)).length;
+  s+=overdue*15;
+  if(c.interest>=4)s+=15;else if(c.interest>=3)s+=8;
+  const amt=totalPart(c);if(amt>3000)s+=10;else if(amt>1000)s+=5;
+  return Math.min(s,100);
+}
+
+function scoreBadge(score){
+  const cls=score>=70?'sb-hot':score>=40?'sb-warm':score>=15?'sb-cool':'sb-cold';
+  if(score===0)return`<span class="score-badge sb-cold" title="Score de priorité">—</span>`;
+  return`<span class="score-badge ${cls}" title="Score de priorité : ${score}/100">${score}</span>`;
+}
+
+function interestStars(n){
+  if(!n)return'';
+  return`<span class="stars">${'★'.repeat(n)}${'☆'.repeat(5-n)}</span>`;
+}
+
+function fmt(n){if(!n||isNaN(n))return'—';return Number(n).toLocaleString('fr-FR')+' €'}
+function fmtD(d){if(!d)return'—';return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
+function initials(n){if(!n)return'?';return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+function isOverdue(d){return d&&new Date(d)<new Date(new Date().toDateString())}
+function isToday(d){return d&&new Date(d).toDateString()===new Date().toDateString()}
+
+function totalPart(c){
+  const p=c.partnership||{};
+  return(+p.led||0)+(+p.vip||0)+(+p.bodega||0)+(+p.bache||0)+(+p.autre||0);
+}
+
+function badgeS(s){return`<span class="badge-s s-${s}">${STATUS[s]||s}</span>`}
+
+// ═══════════════════════════════════════════════════════════
+// VIEWS
+// ═══════════════════════════════════════════════════════════
+let currentView='dashboard';
+let searchQ='', filterStatus='', filterZone='', filterSource='';
+
+function showView(v,el){
+  currentView=v;
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  if(el) el.classList.add('active');
+  else{
+    const map={dashboard:0,contacts:1,pipeline:2,agenda:3};
+    const links=document.querySelectorAll('nav a');
+    if(links[map[v]])links[map[v]].classList.add('active');
+  }
+  const titles={dashboard:'Vue d\'ensemble',focus:'Focus du jour',contacts:'Entreprises',pipeline:'Pipeline commercial',agenda:'Agenda & Rappels',relances:'Relances',activite:'Activité globale',stats:'Statistiques',objectifs:'Objectifs saison',messages:'Modèles de messages'};
+  document.getElementById('page-title').textContent=titles[v]||v;
+  render();
+  closeSidebar();
+}
+
+function render(){
+  const el=document.getElementById('content');
+  if(currentView==='dashboard') el.innerHTML=vDashboard();
+  else if(currentView==='focus') el.innerHTML=vFocus();
+  else if(currentView==='contacts') el.innerHTML=vContacts();
+  else if(currentView==='pipeline') el.innerHTML=vPipeline();
+  else if(currentView==='agenda') el.innerHTML=vAgenda();
+  else if(currentView==='relances') el.innerHTML=vRelances();
+  else if(currentView==='activite') el.innerHTML=vActivite();
+  else if(currentView==='stats') el.innerHTML=vStats();
+  else if(currentView==='objectifs') el.innerHTML=vObjectifs();
+  else if(currentView==='messages') el.innerHTML=vMessages();
+  updateNotif();
+  // Restore focus on search input after re-render
+  const si=document.getElementById('search-input');
+  if(si && document.activeElement !== si && searchQ){
+    si.focus(); si.setSelectionRange(si.value.length, si.value.length);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function vDashboard(){
+  const cos=db.companies;
+  const signed=cos.filter(c=>c.status==='signe');
+  const inprog=cos.filter(c=>['offre_envoyee','rdv_fixe','en_cours','contacte'].includes(c.status));
+  const signedAmt=signed.reduce((s,c)=>s+totalPart(c),0);
+  const pipeAmt=cos.reduce((s,c)=>s+totalPart(c),0);
+  const overdueEvts=db.events.filter(e=>!e.done&&isOverdue(e.date));
+  const upcoming=db.events.filter(e=>!e.done).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,6);
+
+  const obj=db.objectif||{target:50000,saison:'2025-2026',calls_week:30};
+  // Pipeline pondéré (CA prévisionnel pondéré par probabilité)
+  const weightedCA=Math.round(cos.reduce((s,c)=>s+totalPart(c)*(PIPELINE_WEIGHTS[c.status]||0)/100,0));
+
+  // Offres sans réponse depuis +7j
+  const sevenAgo=new Date(Date.now()-7*864e5);
+  const offresStale=cos.filter(c=>c.status==='offre_envoyee'&&new Date(c.updatedAt||c.createdAt||0)<sevenAgo);
+
+  // Résumé hebdomadaire
+  const weekAgo=new Date(Date.now()-7*864e5);
+  const weekLogs=[];
+  cos.forEach(c=>(c.history||[]).forEach(h=>{if(new Date(h.date)>weekAgo)weekLogs.push({...h,company:c})}));
+  const weekNew=cos.filter(c=>new Date(c.createdAt||0)>weekAgo).length;
+  const weekCalls=weekLogs.filter(h=>h.type==='appel').length;
+  const weekEmails=weekLogs.filter(h=>h.type==='email').length;
+  const weekRdv=weekLogs.filter(h=>h.type==='rdv').length;
+  const weekRelances=weekLogs.filter(h=>h.type==='relance').length;
+
+  return`
+  ${overdueEvts.length>0?`<div class="alert alert-warn">⚠️ <strong>${overdueEvts.length} rappel(s) en retard</strong> — <a href="#" onclick="showView('agenda',null);return false" style="color:inherit;font-weight:700">Voir l'agenda →</a></div>`:''}
+  ${offresStale.length>0?`<div class="alert alert-warn" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>📧 <strong>${offresStale.length} offre(s) sans réponse</strong> depuis +7 jours — ${offresStale.slice(0,3).map(c=>`<strong>${c.name}</strong>`).join(', ')}${offresStale.length>3?'…':''}</span>
+    <button class="btn btn-sm btn-secondary" onclick="showView('relances',null)">Relancer →</button>
+  </div>`:''}
+  ${cos.length===0&&window.CRM_INITIAL_DATA?`<div class="alert alert-info" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <span>👋 <strong>${window.CRM_INITIAL_DATA.length} entreprises</strong> prêtes à importer</span>
+    <button class="btn btn-primary btn-sm" onclick="importAllData()">⬆ Importer toutes mes données</button>
+  </div>`:''}
+  ${cos.length===0&&!window.CRM_INITIAL_DATA?`<div class="alert alert-info">👋 Bienvenue ! <strong>Importez vos données</strong> ou ajoutez votre première entreprise. <button class="btn btn-sm btn-secondary" onclick="openImport()" style="margin-left:8px">⬆ Importer</button></div>`:''}
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="s-label">Entreprises</div><div class="s-val">${cos.length}</div><div class="s-sub">${cos.filter(c=>c.status==='a_contacter').length} à contacter</div></div>
+    <div class="stat-card"><div class="s-label">Signés cette saison</div><div class="s-val c-green">${signed.length}</div><div class="s-sub">${fmt(signedAmt)}</div></div>
+    <div class="stat-card"><div class="s-label">En négociation</div><div class="s-val c-orange">${inprog.length}</div><div class="s-sub">${fmt(inprog.reduce((s,c)=>s+totalPart(c),0))}</div></div>
+    <div class="stat-card"><div class="s-label">CA prévisionnel pondéré</div><div class="s-val c-red">${fmt(weightedCA)}</div><div class="s-sub">Signé: ${fmt(signedAmt)}</div></div>
+  </div>
+
+  <!-- Résumé semaine -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-header"><h2>📊 Cette semaine</h2><button class="btn btn-ghost btn-sm" onclick="showView('activite',null)">Historique complet →</button></div>
+    <div class="card-body">
+      <div class="week-grid">
+        <div class="week-stat">
+          <div class="wv" style="color:${weekCalls>=(obj.calls_week||30)?'var(--green)':'var(--red)'}">${weekCalls}${obj.calls_week?`<span style="font-size:13px;color:var(--muted);font-weight:500">/${obj.calls_week}</span>`:''}</div>
+          <div class="wl">📞 Appels</div>
+          ${obj.calls_week?`<div class="calls-progress"><div class="calls-fill" style="width:${Math.min(weekCalls/(obj.calls_week||30)*100,100)}%;background:${weekCalls>=(obj.calls_week||30)?'#16a34a':'#c8102e'}"></div></div>`:''}
+        </div>
+        <div class="week-stat"><div class="wv">${weekEmails}</div><div class="wl">📧 Emails</div></div>
+        <div class="week-stat"><div class="wv">${weekRdv}</div><div class="wl">🤝 RDV</div></div>
+        <div class="week-stat"><div class="wv">${weekRelances}</div><div class="wl">🔁 Relances</div></div>
+      </div>
+      ${weekCalls>=(obj.calls_week||30)?`<div style="color:#16a34a;font-size:12px;font-weight:700;text-align:center;margin-top:4px">🎉 Objectif appels atteint cette semaine !</div>`:
+        obj.calls_week?`<div style="font-size:12px;color:var(--muted);text-align:center;margin-top:4px">Encore ${(obj.calls_week||30)-weekCalls} appel(s) pour atteindre l'objectif · <a href="#" onclick="showView('objectifs',null);return false" style="color:var(--red)">Modifier →</a></div>`:''}
+      ${weekNew>0?`<div style="font-size:12px;color:var(--muted);margin-top:4px;text-align:center">+ ${weekNew} nouvelle(s) entreprise(s)</div>`:''}
+      ${weekLogs.length===0?`<div style="font-size:12.5px;color:var(--muted);text-align:center;padding:8px 0">Aucun log cette semaine — commencez à enregistrer vos appels !</div>`:''}
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="card">
+      <div class="card-header"><h2>Dernières entreprises</h2><button class="btn btn-ghost btn-sm" onclick="showView('contacts',null)">Tout voir →</button></div>
+      ${cos.length===0?`<div class="empty" style="padding:30px"><div class="ei">🏢</div><p>Aucune entreprise</p></div>`:
+      `<div class="tbl-wrap"><table><thead><tr><th>Entreprise</th><th>Statut</th><th>Total</th></tr></thead><tbody>
+      ${cos.slice(-8).reverse().map(c=>`
+        <tr onclick="openDetail('${c.id}')">
+          <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar">${initials(c.name)}</div><div><div class="td-name">${c.name}</div><div style="font-size:11px;color:var(--muted)">${c.info?.sector||''}</div></div></div></td>
+          <td>${badgeS(c.status)}</td>
+          <td class="td-amt">${fmt(totalPart(c))}</td>
+        </tr>`).join('')}
+      </tbody></table></div>`}
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Prochains rappels</h2><button class="btn btn-ghost btn-sm" onclick="showView('agenda',null)">Tout voir →</button></div>
+      <div class="card-body" style="padding:12px 16px">
+        ${upcoming.length===0?`<div class="empty" style="padding:20px"><div class="ei">📅</div><p>Aucun rappel</p></div>`:
+        upcoming.map(e=>{
+          const co=db.companies.find(x=>x.id===e.companyId);
+          const dt=new Date(e.date);
+          const ov=isOverdue(e.date),td=isToday(e.date);
+          return`<div class="agenda-item ${ov?'overdue':td?'today':''}" onclick="openDetail('${e.companyId}')">
+            <div class="ai-date"><div class="day">${dt.getDate()}</div><div class="mo">${dt.toLocaleDateString('fr-FR',{month:'short'})}</div></div>
+            <div class="ai-body">
+              <div class="ai-title">${e.title}</div>
+              <div class="ai-co">${co?co.name:'—'}</div>
+              ${ov?'<div class="overdue-lbl">⚠ En retard</div>':td?'<div class="today-lbl">Aujourd\'hui</div>':''}
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();markDone('${e.id}')">✓</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// FOCUS DU JOUR
+// ═══════════════════════════════════════════════════════════
+function vFocus(){
+  const today=new Date();
+  const urgentEvents=db.events.filter(e=>!e.done&&isOverdue(e.date)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const todayEvents=db.events.filter(e=>!e.done&&isToday(e.date)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const relances=getRelances().slice(0,6);
+  const total=urgentEvents.length+todayEvents.length;
+
+  function focusEvent(e,urgency){
+    const c=db.companies.find(x=>x.id===e.companyId);
+    const dt=new Date(e.date);
+    return`<div class="focus-card ${urgency}">
+      <div class="ai-date" style="background:${urgency==='fc-urgent'?'#dc2626':'#d97706'}">
+        <div class="day">${dt.getDate()}</div><div class="mo">${dt.toLocaleDateString('fr-FR',{month:'short'})}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px">${e.title}</div>
+        <div style="font-size:12px;color:var(--muted)">${c?c.name:'—'}${c?.contact?.phone?` · <a href="tel:${c.contact.phone}" style="color:var(--red);text-decoration:none">${c.contact.phone}</a>`:''}</div>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="markDone('${e.id}')">✓</button>
+      <button class="btn btn-secondary btn-sm" onclick="openDetail('${e.companyId||''}')">Fiche</button>
+    </div>`;
+  }
+
+  function focusRelance(c){
+    return`<div class="focus-card fc-normal" onclick="openDetail('${c.id}')" style="cursor:pointer">
+      <div class="avatar">${initials(c.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13.5px">${c.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${c.reason}</div>
+      </div>
+      ${c.contact?.phone?`<a href="tel:${c.contact.phone}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--red);font-weight:600;text-decoration:none;white-space:nowrap">📞 ${c.contact.phone}</a>`:''}
+      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openQuickLog('${c.id}')">📞 Log</button>
+    </div>`;
+  }
+
+  const dayLabel=today.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+
+  return`
+  <div style="max-width:780px">
+    <div style="margin-bottom:22px">
+      <div style="font-size:20px;font-weight:800;text-transform:capitalize">${dayLabel}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px">
+        ${total>0?`⚠️ <strong>${total}</strong> action(s) urgente(s)`:'✅ Aucune urgence'} · ${relances.length} relance(s) recommandée(s)
+      </div>
+    </div>
+
+    ${urgentEvents.length?`
+    <div style="margin-bottom:22px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#dc2626;margin-bottom:10px">⚠️ En retard (${urgentEvents.length})</div>
+      ${urgentEvents.map(e=>focusEvent(e,'fc-urgent')).join('')}
+    </div>`:''}
+
+    ${todayEvents.length?`
+    <div style="margin-bottom:22px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#d97706;margin-bottom:10px">📅 Aujourd'hui (${todayEvents.length})</div>
+      ${todayEvents.map(e=>focusEvent(e,'fc-today')).join('')}
+    </div>`:''}
+
+    ${relances.length?`
+    <div style="margin-bottom:22px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:10px">🔁 Relances recommandées (${relances.length})</div>
+      ${relances.map(focusRelance).join('')}
+    </div>`:''}
+
+    ${!total&&!relances.length?`
+    <div class="empty" style="padding:80px 20px">
+      <div class="ei">✅</div>
+      <h3>Journée nette !</h3>
+      <p>Aucune urgence ni relance en attente.</p>
+    </div>`:''}
+
+    <div style="text-align:center;margin-top:10px">
+      <button class="btn btn-secondary btn-sm" onclick="showView('relances',null)">Voir toutes les relances →</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTACTS VIEW
+// ═══════════════════════════════════════════════════════════
+let selectedIds=new Set();
+let _sortByScore=false;
+
+function freshnessClass(c){
+  const lastH=c.history?.slice(-1)[0];
+  if(!lastH)return'tr-cold';
+  const days=(Date.now()-new Date(lastH.date))/(864e5);
+  if(days<14)return'tr-fresh';
+  if(days<30)return'tr-warm';
+  return'tr-cold';
+}
+
+function freshnessDot(c){
+  const lastH=c.history?.slice(-1)[0];
+  if(!lastH)return`<span class="days-badge db-gray" title="Jamais contacté">jamais</span>`;
+  const days=Math.floor((Date.now()-new Date(lastH.date))/(864e5));
+  if(days<14)return`<span class="days-badge db-green" title="${lastH.note||''}">${days}j</span>`;
+  if(days<30)return`<span class="days-badge db-orange" title="${lastH.note||''}">${days}j</span>`;
+  return`<span class="days-badge db-red" title="${lastH.note||''}">${days}j</span>`;
+}
+
+function vContacts(){
+  let list=[...db.companies];
+  if(searchQ){const q=searchQ.toLowerCase();list=list.filter(c=>c.name?.toLowerCase().includes(q)||c.contact?.name?.toLowerCase().includes(q)||c.info?.zone?.toLowerCase().includes(q)||c.contact?.email?.toLowerCase().includes(q))}
+  if(filterStatus)list=list.filter(c=>c.status===filterStatus);
+  if(filterZone)list=list.filter(c=>c.info?.zone===filterZone);
+  if(filterSource)list=list.filter(c=>c.source===filterSource);
+  if(_sortByScore) list.sort((a,b)=>priorityScore(b)-priorityScore(a));
+
+  const allSelected=list.length>0&&list.every(c=>selectedIds.has(c.id));
+
+  const bulkBar=selectedIds.size>0?`<div class="bulk-bar">
+    <span>${selectedIds.size} sélectionnée(s)</span>
+    <select onchange="bulkChangeStatus(this.value);this.value=''" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer">
+      <option value="">Changer statut…</option>
+      ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+    </select>
+    <button class="btn btn-sm" onclick="bulkAddReminder()">📅 Rappels</button>
+    <button class="btn btn-sm" style="background:rgba(220,38,38,.4);border-color:rgba(220,38,38,.6)" onclick="bulkDelete()">🗑 Supprimer</button>
+    <button class="btn btn-sm" onclick="selectedIds.clear();render()" style="margin-left:auto">✕ Désélectionner</button>
+  </div>`:''
+
+  const REFUS_LABELS={budget:'💰 Budget',pas_interesse:'🚫 Pas intéressé',pas_decideur:'👤 Pas décisionnaire',concurrent:'⚔️ Concurrent',timing:'⏰ Mauvais timing',autre:'📝 Autre'};
+
+  return`
+  <div class="toolbar">
+    <div class="search-box">🔍 <input type="text" placeholder="Chercher nom, contact, zone…" value="${searchQ}" oninput="onSearchInput(this.value)" id="search-input"></div>
+    <select class="flt" onchange="filterStatus=this.value;render()">
+      <option value="">Tous statuts</option>
+      ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${filterStatus===k?'selected':''}>${v}</option>`).join('')}
+    </select>
+    <select class="flt" onchange="filterZone=this.value;render()">
+      <option value="">Toutes zones</option>
+      ${ZONES.map(z=>`<option value="${z}" ${filterZone===z?'selected':''}>${z}</option>`).join('')}
+    </select>
+    <select class="flt" onchange="filterSource=this.value;render()">
+      <option value="">Toutes sources</option>
+      ${SOURCES.map(s=>`<option value="${s}" ${filterSource===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <button class="btn btn-sm ${_sortByScore?'btn-primary':'btn-secondary'}" onclick="_sortByScore=!_sortByScore;render()" title="Trier par priorité">🎯 Score</button>
+    <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📥 CSV</button>
+  </div>
+  ${bulkBar}
+  <div class="card">
+    <div class="card-header">
+      <h2>Entreprises <span style="color:var(--muted);font-weight:400;font-size:12px">(${list.length})</span></h2>
+      <div style="display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--muted)">
+        ${_sortByScore?`<span style="color:var(--red);font-weight:600">🎯 Triées par priorité</span>`:''}
+        <span class="days-badge db-green">récent</span> &lt;14j
+        <span class="days-badge db-orange">14j</span> &lt;30j
+        <span class="days-badge db-red">+30j</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+    ${list.length===0?`<div class="empty"><div class="ei">🏢</div><h3>Aucune entreprise</h3><p>Modifiez les filtres ou ajoutez une entreprise</p></div>`:
+    `<table>
+      <thead><tr>
+        <th><input type="checkbox" ${allSelected?'checked':''} onchange="toggleSelectAll(this.checked,${JSON.stringify(list.map(c=>c.id))})" title="Tout sélectionner"></th>
+        <th title="Score de priorité">Score</th>
+        <th>Entreprise</th><th>Contact</th><th>Statut</th><th>Zone</th>
+        <th style="text-align:right">Total</th><th>Rappel</th><th></th>
+      </tr></thead>
+      <tbody>
+      ${list.map(c=>{
+        const ne=db.events.filter(e=>e.companyId===c.id&&!e.done).sort((a,b)=>new Date(a.date)-new Date(b.date))[0];
+        const ov=ne&&isOverdue(ne.date);
+        const p=c.partnership||{};
+        const sel=selectedIds.has(c.id);
+        const score=priorityScore(c);
+        const refusLabel=REFUS_LABELS[c.raison_refus]||c.raison_refus||'';
+        return`<tr class="${freshnessClass(c)}${sel?' selected':''}" onclick="openDetail('${c.id}')">
+          <td onclick="event.stopPropagation()"><input type="checkbox" ${sel?'checked':''} onchange="toggleSelect('${c.id}')"></td>
+          <td onclick="event.stopPropagation()">${scoreBadge(score)}</td>
+          <td><div style="display:flex;align-items:center;gap:8px">
+            <div class="avatar">${initials(c.name)}</div>
+            <div>
+              <div class="td-name">${c.name}</div>
+              <div style="display:flex;align-items:center;gap:5px;margin-top:1px">
+                ${c.interest?interestStars(c.interest):''}
+                ${c.decision==='oui'?`<span class="decision-yes" title="Décisionnaire identifié">✓ décideur</span>`:c.decision==='non'?`<span class="decision-no" title="Décisionnaire non identifié">✗ décideur</span>`:''}
+                ${c.formule?`<span style="font-size:10px;color:var(--blue);font-weight:600">${c.formule}</span>`:''}
+              </div>
+            </div>
+          </div></td>
+          <td><div style="display:flex;align-items:center;gap:5px">${freshnessDot(c)}<div>
+            <div style="font-size:12.5px">${c.contact?.name||'—'}</div>
+            <div style="font-size:11px;color:var(--muted)">${c.contact?.phone||''}</div>
+          </div></div></td>
+          <td>${badgeS(c.status)}${refusLabel?`<div style="font-size:10.5px;color:var(--muted);margin-top:2px">${refusLabel}</div>`:''}</td>
+          <td><span style="font-size:12px;color:var(--muted)">${c.info?.zone||'—'}</span><div style="font-size:10.5px;color:var(--muted)">${c.source||''}</div></td>
+          <td style="text-align:right;font-weight:700;color:var(--red);font-size:14px">${fmt(totalPart(c))}</td>
+          <td>${ne?`<span class="${ov?'overdue-lbl':''}" style="font-size:12px">${ov?'⚠ ':''} ${fmtD(ne.date)}</span>`:'<span style="color:var(--muted);font-size:11.5px">—</span>'}</td>
+          <td onclick="event.stopPropagation()"><div style="display:flex;gap:3px">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="openQuickLog('${c.id}')" title="Log appel/relance">📞</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="openEditCompany('${c.id}')" title="Modifier">✏️</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="openNewEvent('${c.id}')" title="Rappel">📅</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="openDetail('${c.id}')" title="Fiche">👁</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="delCompany('${c.id}')" title="Supprimer">🗑</button>
+          </div></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`}
+    </div>
+  </div>`;
+}
+
+function toggleSelect(id){if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);render()}
+function toggleSelectAll(checked,ids){ids.forEach(id=>checked?selectedIds.add(id):selectedIds.delete(id));render()}
+
+function bulkChangeStatus(s){
+  if(!s||!selectedIds.size)return;
+  const count=selectedIds.size;
+  db.companies.forEach(c=>{if(selectedIds.has(c.id)){c.status=s;c.updatedAt=new Date().toISOString()}});
+  selectedIds.clear();saveDB();render();showToast(`✅ ${count} statuts → ${STATUS[s]}`);
+}
+
+function bulkAddReminder(){
+  if(!selectedIds.size)return;
+  const days=parseInt(prompt('Créer un rappel dans combien de jours ?','7'));
+  if(!days||isNaN(days))return;
+  const d=new Date();d.setDate(d.getDate()+days);
+  const dateStr=d.toISOString().slice(0,10);
+  const count=selectedIds.size;
+  selectedIds.forEach(id=>{
+    const c=db.companies.find(x=>x.id===id);
+    if(c)db.events.push({id:genId(),companyId:id,type:'rappel',title:`Relance — ${c.name}`,date:dateStr,done:false,createdAt:new Date().toISOString()});
+  });
+  selectedIds.clear();saveDB();render();
+  showToast(`📅 ${count} rappels créés — ${d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`);
+}
+
+function bulkDelete(){
+  if(!selectedIds.size)return;
+  if(!confirm(`Supprimer ${selectedIds.size} entreprise(s) ?`))return;
+  const count=selectedIds.size;
+  db.companies=db.companies.filter(c=>!selectedIds.has(c.id));
+  db.events=db.events.filter(e=>!selectedIds.has(e.companyId));
+  selectedIds.clear();saveDB();render();showToast(`🗑 ${count} entreprises supprimées`);
+}
+
+// ═══════════════════════════════════════════════════════════
+// PIPELINE
+// ═══════════════════════════════════════════════════════════
+function vPipeline(){
+  const cols=['a_contacter','contacte','offre_envoyee','rdv_fixe','signe'];
+  return`
+  <div style="margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap">
+    ${Object.entries(STATUS).map(([k,v])=>{
+      const items=db.companies.filter(c=>c.status===k);
+      const t=items.reduce((s,c)=>s+totalPart(c),0);
+      return`<span class="chip">${v} <strong style="margin-left:3px">${items.length}</strong>${t>0?' · <strong style="color:var(--red)">'+fmt(t)+'</strong>':''}</span>`;
+    }).join('')}
+  </div>
+  <div class="pipeline">
+    ${cols.map(k=>{
+      const items=db.companies.filter(c=>c.status===k);
+      return`<div class="pcol">
+        <div class="pcol-hd">${STATUS[k]} <span class="cnt">${items.length}</span></div>
+        ${items.length===0?`<div style="text-align:center;padding:16px 0;color:var(--muted);font-size:11.5px">Aucune</div>`:
+          items.map(c=>`<div class="pcard" onclick="openDetail('${c.id}')">
+            <div class="pc-name">${c.name}</div>
+            <div class="pc-amt">${totalPart(c)>0?fmt(totalPart(c)):'—'}</div>
+            <div class="pc-src">${c.info?.zone||''} ${c.source?'· '+c.source:''}</div>
+          </div>`).join('')}
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px;color:var(--muted);font-size:11.5px" onclick="openNewCompanyWithStatus('${k}')">+ Ajouter</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// AGENDA
+// ═══════════════════════════════════════════════════════════
+function vAgenda(){
+  const events=[...db.events].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const upcoming=events.filter(e=>!e.done);
+  const done=events.filter(e=>e.done);
+
+  return`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button class="btn btn-primary" onclick="openNewEvent()">+ Nouveau rappel</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div>
+      <div class="fsection">À venir (${upcoming.length})</div>
+      ${upcoming.length===0?`<div class="empty" style="padding:30px 10px"><div class="ei">📅</div><h3>Aucun rappel</h3></div>`:
+      upcoming.map(e=>{
+        const co=db.companies.find(x=>x.id===e.companyId);
+        const dt=new Date(e.date);
+        const ov=isOverdue(e.date),td=isToday(e.date);
+        return`<div class="agenda-item ${ov?'overdue':td?'today':''}">
+          <div class="ai-date"><div class="day">${dt.getDate()}</div><div class="mo">${dt.toLocaleDateString('fr-FR',{month:'short'})}</div></div>
+          <div class="ai-body">
+            <div class="ai-title">${TYPE_ICONS[e.type]||'📌'} ${e.title}</div>
+            <div class="ai-co">${co?co.name:'—'}</div>
+            ${e.time?`<div class="ai-time">⏰ ${e.time}</div>`:''}
+            ${e.note?`<div style="font-size:11.5px;color:var(--muted);margin-top:2px">${e.note}</div>`:''}
+            ${ov?'<div class="overdue-lbl">⚠ En retard</div>':td?'<div class="today-lbl">Aujourd\'hui</div>':''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <button class="btn btn-ghost btn-sm" onclick="markDone('${e.id}')" title="Terminé">✓</button>
+            <button class="btn btn-ghost btn-sm" onclick="delEvent('${e.id}')" title="Supprimer">🗑</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div>
+      <div class="fsection">Terminés (${done.length})</div>
+      ${done.length===0?`<div style="color:var(--muted);font-size:13px;padding:12px 0">Aucun</div>`:
+      done.slice(-15).reverse().map(e=>{
+        const co=db.companies.find(x=>x.id===e.companyId);
+        return`<div class="agenda-item done">
+          <div class="ai-body"><div class="ai-title" style="text-decoration:line-through">${e.title}</div>
+          <div class="ai-co">${co?co.name:'—'} · ${fmtD(e.date)}</div></div>
+          <button class="btn btn-ghost btn-sm" onclick="delEvent('${e.id}')">🗑</button>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPANY FORM
+// ═══════════════════════════════════════════════════════════
+let editingId=null;
+
+function companyForm(c={}, defStatus){
+  const s=c.status||defStatus||'a_contacter';
+  const p=c.partnership||{};
+  return`
+  <div class="fsection">Entreprise</div>
+  <div class="frow c2">
+    <div class="fg"><label>Nom *</label><input id="f-name" type="text" value="${c.name||''}" placeholder="Ex: ARTBAT"></div>
+    <div class="fg"><label>Secteur</label><input id="f-sector" type="text" value="${c.info?.sector||''}" placeholder="BTP, Nettoyage…"></div>
+  </div>
+  <div class="frow c4">
+    <div class="fg"><label>Taille</label>
+      <select id="f-size">
+        <option value="">—</option>
+        ${['TPE','PME','ETI','GE'].map(x=>`<option ${c.info?.size===x?'selected':''}>${x}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label>Zone</label>
+      <select id="f-zone">
+        <option value="">—</option>
+        ${ZONES.map(z=>`<option value="${z}" ${c.info?.zone===z?'selected':''}>${z}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label>Source</label>
+      <select id="f-source">
+        <option value="">—</option>
+        ${SOURCES.map(s2=>`<option value="${s2}" ${c.source===s2?'selected':''}>${s2}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label>Saison</label>
+      <select id="f-saison">
+        ${['2025-2026','2026-2027','2024-2025'].map(x=>`<option ${(c.saison||'2025-2026')===x?'selected':''}>${x}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div class="frow c2">
+    <div class="fg"><label>Statut</label>
+      <select id="f-status">
+        ${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${s===k?'selected':''}>${v}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fg"><label>Raison de refus</label>
+      <select id="f-raison">
+        <option value="">—</option>
+        <option value="budget" ${c.raison_refus==='budget'?'selected':''}>💰 Budget insuffisant</option>
+        <option value="pas_interesse" ${c.raison_refus==='pas_interesse'?'selected':''}>🚫 Pas intéressé</option>
+        <option value="pas_decideur" ${c.raison_refus==='pas_decideur'?'selected':''}>👤 Pas décisionnaire</option>
+        <option value="concurrent" ${c.raison_refus==='concurrent'?'selected':''}>⚔️ Concurrent</option>
+        <option value="timing" ${c.raison_refus==='timing'?'selected':''}>⏰ Mauvais timing</option>
+        <option value="autre" ${c.raison_refus==='autre'?'selected':''}>📝 Autre</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg" style="margin-bottom:14px"><label>Adresse / Site web</label><input id="f-address" type="text" value="${c.info?.address||''}" placeholder="Adresse ou site web"></div>
+
+  <div class="fsection">Qualification commerciale</div>
+  <div class="frow c3" style="margin-bottom:14px">
+    <div class="fg"><label>Niveau d'intérêt</label>
+      <select id="f-interest">
+        <option value="">— Non évalué —</option>
+        <option value="1" ${c.interest==1?'selected':''}>⭐ Faible</option>
+        <option value="2" ${c.interest==2?'selected':''}>⭐⭐ Moyen</option>
+        <option value="3" ${c.interest==3?'selected':''}>⭐⭐⭐ Bon</option>
+        <option value="4" ${c.interest==4?'selected':''}>⭐⭐⭐⭐ Très intéressé</option>
+        <option value="5" ${c.interest==5?'selected':''}>⭐⭐⭐⭐⭐ Chaud !</option>
+      </select>
+    </div>
+    <div class="fg"><label>Décisionnaire identifié</label>
+      <select id="f-decision">
+        <option value="">— Inconnu —</option>
+        <option value="oui" ${c.decision==='oui'?'selected':''}>✅ Oui</option>
+        <option value="non" ${c.decision==='non'?'selected':''}>❌ Non — à trouver</option>
+      </select>
+    </div>
+    <div class="fg"><label>Formule évoquée</label>
+      <select id="f-formule">
+        <option value="">— Non précisé —</option>
+        ${['LED','VIP','Bodega','Bâche','Plusieurs'].map(f=>`<option value="${f}" ${c.formule===f?'selected':''}>${f}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+
+  <div class="fsection">Contact principal</div>
+  <div class="frow c2">
+    <div class="fg"><label>Nom & Prénom</label><input id="f-cname" type="text" value="${c.contact?.name||''}" placeholder="Jean Dupont"></div>
+    <div class="fg"><label>Poste</label><input id="f-crole" type="text" value="${c.contact?.role||''}" placeholder="Directeur commercial"></div>
+  </div>
+  <div class="frow c2">
+    <div class="fg"><label>Téléphone</label><input id="f-cphone" type="tel" value="${c.contact?.phone||''}" placeholder="06 12 34 56 78"></div>
+    <div class="fg"><label>Email</label><input id="f-cemail" type="email" value="${c.contact?.email||''}" placeholder="contact@entreprise.fr"></div>
+  </div>
+
+  <div class="fsection">Partenariat FC Rouen — Saison ${c.saison||'2025-2026'}</div>
+  <div class="frow c2">
+    <div class="fg"><label>💡 LED — Visibilité (€)</label><input id="f-led" type="number" value="${p.led||''}" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label>Détail LED</label><input id="f-led-d" type="text" value="${p.led_d||''}" placeholder="Ex: 6 min visibilité LED/match"></div>
+  </div>
+  <div class="frow c2">
+    <div class="fg"><label>🏆 VIP — Places (€)</label><input id="f-vip" type="number" value="${p.vip||''}" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label>Détail VIP</label><input id="f-vip-d" type="text" value="${p.vip_d||''}" placeholder="Ex: 4 Places VIP à l'année"></div>
+  </div>
+  <div class="frow c2">
+    <div class="fg"><label>🍺 Bodega — Places (€)</label><input id="f-bodega" type="number" value="${p.bodega||''}" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label>Détail Bodega</label><input id="f-bodega-d" type="text" value="${p.bodega_d||''}" placeholder="Ex: 6 Places Bodega"></div>
+  </div>
+  <div class="frow c2">
+    <div class="fg"><label>📌 Bâche / Panneau (€)</label><input id="f-bache" type="number" value="${p.bache||''}" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label>Détail Bâche</label><input id="f-bache-d" type="text" value="${p.bache_d||''}" placeholder="Ex: Bâche 2x1m"></div>
+  </div>
+  <div class="frow c2">
+    <div class="fg"><label>Autre (€)</label><input id="f-autre" type="number" value="${p.autre||''}" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label>Total calculé</label><input id="f-total" readonly style="background:var(--red-light);color:var(--red);font-weight:700;cursor:default" placeholder="Auto"></div>
+  </div>
+  <div class="fg" style="margin-bottom:14px"><label>Notes partenariat</label><textarea id="f-pnotes" placeholder="Conditions, remarques…">${p.notes||''}</textarea></div>
+
+  <div class="fsection">Notes générales</div>
+  <div class="fg"><textarea id="f-notes" placeholder="Infos complémentaires…" style="min-height:70px">${c.info?.notes||''}</textarea></div>
+
+  <script>
+  function calcTotal(){
+    const v=['f-led','f-vip','f-bodega','f-bache','f-autre'].reduce((s,id)=>s+(parseFloat(document.getElementById(id)?.value)||0),0);
+    const el=document.getElementById('f-total');
+    if(el)el.value=v>0?v.toLocaleString('fr-FR')+' €':'';
+  }
+  calcTotal();
+  <\/script>`;
+}
+
+function openNewCompany(defStatus){
+  editingId=null;
+  document.getElementById('m-company-title').textContent='Nouvelle entreprise';
+  document.getElementById('m-company-body').innerHTML=companyForm({},defStatus);
+  document.getElementById('m-company').classList.add('open');
+}
+function openNewCompanyWithStatus(s){openNewCompany(s)}
+function openEditCompany(id){
+  const c=db.companies.find(x=>x.id===id);if(!c)return;
+  editingId=id;
+  document.getElementById('m-company-title').textContent='Modifier — '+c.name;
+  document.getElementById('m-company-body').innerHTML=companyForm(c);
+  document.getElementById('m-company').classList.add('open');
+}
+
+function saveCompany(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){alert('Le nom est requis.');return}
+  const data={
+    name,saison:document.getElementById('f-saison').value,
+    status:document.getElementById('f-status').value,
+    source:document.getElementById('f-source').value,
+    raison_refus:document.getElementById('f-raison').value,
+    interest:parseInt(document.getElementById('f-interest').value)||0,
+    decision:document.getElementById('f-decision').value,
+    formule:document.getElementById('f-formule').value,
+    info:{sector:document.getElementById('f-sector').value.trim(),size:document.getElementById('f-size').value,zone:document.getElementById('f-zone').value,address:document.getElementById('f-address').value.trim(),notes:document.getElementById('f-notes').value.trim()},
+    contact:{name:document.getElementById('f-cname').value.trim(),role:document.getElementById('f-crole').value.trim(),phone:document.getElementById('f-cphone').value.trim(),email:document.getElementById('f-cemail').value.trim()},
+    partnership:{
+      led:document.getElementById('f-led').value||0, led_d:document.getElementById('f-led-d').value.trim(),
+      vip:document.getElementById('f-vip').value||0, vip_d:document.getElementById('f-vip-d').value.trim(),
+      bodega:document.getElementById('f-bodega').value||0, bodega_d:document.getElementById('f-bodega-d').value.trim(),
+      bache:document.getElementById('f-bache').value||0, bache_d:document.getElementById('f-bache-d').value.trim(),
+      autre:document.getElementById('f-autre').value||0,
+      notes:document.getElementById('f-pnotes').value.trim()
+    }
+  };
+  if(editingId){
+    const i=db.companies.findIndex(c=>c.id===editingId);
+    if(i>=0) db.companies[i]={...db.companies[i],...data,updatedAt:new Date().toISOString()};
+  } else {
+    db.companies.push({id:genId(),...data,history:[],createdAt:new Date().toISOString()});
+  }
+  saveDB();closeModal('m-company');render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// DETAIL MODAL
+// ═══════════════════════════════════════════════════════════
+function openDetail(id){
+  const c=db.companies.find(x=>x.id===id);if(!c)return;
+  document.getElementById('m-detail-title').textContent=c.name;
+  document.getElementById('detail-edit-btn').onclick=()=>{closeModal('m-detail');openEditCompany(id)};
+  const evts=db.events.filter(e=>e.companyId===id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const ne=evts.filter(e=>!e.done)[0];
+  const p=c.partnership||{};
+
+  document.getElementById('m-detail-body').innerHTML=`
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+    <div class="avatar avatar-lg">${initials(c.name)}</div>
+    <div>
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px">${c.name}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${badgeS(c.status)}
+        ${c.saison?`<span class="saison-badge">📅 ${c.saison}</span>`:''}
+        ${c.info?.zone?`<span class="chip">${c.info.zone}</span>`:''}
+        ${c.info?.size?`<span class="chip">${c.info.size}</span>`:''}
+        ${c.source?`<span class="chip">📍 ${c.source}</span>`:''}
+      </div>
+      ${c.raison_refus?`<div style="margin-top:5px;font-size:12px;color:#dc2626;font-weight:600">Refus : ${c.raison_refus}</div>`:''}
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+    <div class="card" style="padding:13px 15px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Contact principal</div>
+      <div style="font-size:14.5px;font-weight:700;margin-bottom:3px">${c.contact?.name||'—'}</div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:5px">${c.contact?.role||''}</div>
+      ${c.contact?.phone?`<a href="tel:${c.contact.phone}" style="display:block;font-size:13px;color:var(--red);font-weight:600;text-decoration:none;margin-bottom:2px">📞 ${c.contact.phone}</a>`:''}
+      ${c.contact?.email?`<a href="mailto:${c.contact.email}" style="display:block;font-size:12.5px;color:var(--blue);text-decoration:none">✉️ ${c.contact.email}</a>`:''}
+    </div>
+    <div class="card" style="padding:13px 15px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Prochain rappel</div>
+      ${ne?`
+        <div style="font-size:13.5px;font-weight:700;margin-bottom:2px">${ne.title}</div>
+        <div style="font-size:12.5px;color:var(--red);font-weight:600">${fmtD(ne.date)}${ne.time?' à '+ne.time:''}</div>
+        ${isOverdue(ne.date)?'<div class="overdue-lbl" style="margin-top:3px">⚠ En retard</div>':''}
+      `:`<div style="color:var(--muted);font-size:13px;margin-bottom:8px">Aucun rappel planifié</div>
+        <button class="btn btn-secondary btn-sm" onclick="openNewEvent('${id}')">+ Planifier</button>`}
+    </div>
+  </div>
+
+  <!-- PARTENARIAT -->
+  <div style="margin-bottom:18px">
+    <div class="fsection">Partenariat</div>
+    <div class="part-grid" style="grid-template-columns:repeat(5,1fr)">
+      ${[['💡 LED',p.led,p.led_d],['🏆 VIP',p.vip,p.vip_d],['🍺 Bodega',p.bodega,p.bodega_d],['📌 Bâche',p.bache,p.bache_d],['Autre',p.autre,'']].map(([l,v,d])=>`
+        <div class="part-item">
+          <div class="pl">${l}</div>
+          <div class="pv">${v>0?fmt(v):'—'}</div>
+          ${d?`<div style="font-size:10.5px;color:var(--muted);margin-top:2px">${d}</div>`:''}
+        </div>`).join('')}
+    </div>
+    <div class="part-total"><span class="ptl">💰 Total partenariat</span><span class="ptv">${fmt(totalPart(c))}</span></div>
+    ${p.notes?`<div style="margin-top:10px;padding:9px 11px;background:var(--bg);border-radius:7px;font-size:13px;color:var(--muted)">${p.notes}</div>`:''}
+  </div>
+
+  <!-- CHANGER STATUT -->
+  <div style="margin-bottom:18px;padding:12px 14px;background:var(--bg);border-radius:8px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px">Changer le statut</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${Object.entries(STATUS).map(([k,v])=>`
+        <button class="btn btn-sm ${c.status===k?'btn-primary':'btn-secondary'}" onclick="changeStatus('${id}','${k}');openDetail('${id}')">${v}</button>`).join('')}
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div style="margin-bottom:18px">
+    <div class="fsection">Historique des échanges</div>
+    <div id="hist-${id}">
+      ${(c.history||[]).length===0?`<div style="color:var(--muted);font-size:13px;padding:8px 0">Aucun échange enregistré</div>`:
+      [...(c.history||[])].reverse().map(h=>`
+        <div class="h-item">
+          <div class="h-icon">${TYPE_ICONS[h.type]||'📝'}</div>
+          <div class="h-content"><div class="h-date">${fmtD(h.date)} — ${h.type}</div><div class="h-note">${h.note}</div></div>
+        </div>`).join('')}
+    </div>
+    <div class="h-add">
+      <select id="ht-${id}" class="flt" style="min-width:90px">
+        <option value="appel">📞 Appel</option>
+        <option value="email">📧 Email</option>
+        <option value="rdv">🤝 RDV</option>
+        <option value="relance">🔁 Relance</option>
+        <option value="note">📝 Note</option>
+      </select>
+      <input type="text" id="hi-${id}" placeholder="Note d'échange…" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:7px 10px;font-size:13px;outline:none">
+      <button class="btn btn-primary btn-sm" onclick="addHistory('${id}')">Ajouter</button>
+    </div>
+  </div>
+
+  <!-- RAPPELS -->
+  <div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div class="fsection" style="margin-bottom:0">Rappels</div>
+      <button class="btn btn-secondary btn-sm" onclick="openNewEvent('${id}')">+ Nouveau</button>
+    </div>
+    ${evts.length===0?`<div style="color:var(--muted);font-size:13px">Aucun rappel</div>`:
+    evts.map(e=>`
+      <div style="display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:5px;${e.done?'opacity:.5':''}">
+        <div style="font-size:13px">${TYPE_ICONS[e.type]||'📌'}</div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600;${e.done?'text-decoration:line-through':''}">${e.title}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${fmtD(e.date)}${e.time?' à '+e.time:''}</div></div>
+        ${!e.done?`<button class="btn btn-ghost btn-sm" onclick="markDone('${e.id}');openDetail('${id}')">✓</button>`:'<span style="color:var(--green);font-size:11.5px;font-weight:700">✓ Fait</span>'}
+        <button class="btn btn-ghost btn-sm" onclick="delEvent('${e.id}');openDetail('${id}')">🗑</button>
+      </div>`).join('')}
+  </div>`;
+
+  document.getElementById('m-detail').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════
+function openNewEvent(coId){
+  document.getElementById('m-event-body').innerHTML=`
+  <div class="fg" style="margin-bottom:12px"><label>Entreprise</label>
+    <select id="ev-co">
+      <option value="">— Aucune —</option>
+      ${db.companies.map(c=>`<option value="${c.id}" ${c.id===coId?'selected':''}>${c.name}</option>`).join('')}
+    </select>
+  </div>
+  <div class="frow c2" style="margin-bottom:12px">
+    <div class="fg"><label>Type</label>
+      <select id="ev-type">
+        <option value="rappel">📌 Rappel</option>
+        <option value="appel">📞 Appel</option>
+        <option value="relance">🔁 Relance</option>
+        <option value="rdv">🤝 RDV</option>
+        <option value="email">📧 Email</option>
+      </select>
+    </div>
+    <div class="fg"><label>Heure</label><input id="ev-time" type="time"></div>
+  </div>
+  <div class="fg" style="margin-bottom:12px"><label>Titre *</label><input id="ev-title" type="text" placeholder="Ex: Relance devis Bodega"></div>
+  <div class="fg" style="margin-bottom:12px"><label>Date *</label><input id="ev-date" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+  <div class="fg"><label>Note</label><textarea id="ev-note" placeholder="Détails…"></textarea></div>`;
+  document.getElementById('m-event').classList.add('open');
+}
+
+function saveEvent(){
+  const title=document.getElementById('ev-title').value.trim();
+  const date=document.getElementById('ev-date').value;
+  if(!title||!date){alert('Titre et date requis.');return}
+  db.events.push({id:genId(),companyId:document.getElementById('ev-co').value,type:document.getElementById('ev-type').value,title,date,time:document.getElementById('ev-time').value,note:document.getElementById('ev-note').value.trim(),done:false,createdAt:new Date().toISOString()});
+  saveDB();closeModal('m-event');render();
+}
+
+function markDone(id){const e=db.events.find(x=>x.id===id);if(e){e.done=true;saveDB();render()}}
+function delEvent(id){if(!confirm('Supprimer ce rappel ?'))return;db.events=db.events.filter(e=>e.id!==id);saveDB();render()}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════
+function addHistory(coId){
+  const input=document.getElementById(`hi-${coId}`);
+  const type=document.getElementById(`ht-${coId}`);
+  const note=input.value.trim();
+  if(!note)return;
+  const c=db.companies.find(x=>x.id===coId);
+  if(!c)return;
+  if(!c.history)c.history=[];
+  c.history.push({date:new Date().toISOString(),type:type.value,note});
+  saveDB();openDetail(coId);
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════
+function changeStatus(id,status){
+  const c=db.companies.find(x=>x.id===id);
+  if(c){c.status=status;c.updatedAt=new Date().toISOString();saveDB();render()}
+}
+function delCompany(id){
+  const c=db.companies.find(x=>x.id===id);
+  if(!confirm(`Supprimer ${c?.name||'cette entreprise'} ?`))return;
+  db.companies=db.companies.filter(x=>x.id!==id);
+  db.events=db.events.filter(e=>e.companyId!==id);
+  saveDB();render();
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════════════════════════
+function exportCSV(){
+  const h=['Nom','Saison','Source','Zone','Secteur','Taille','Statut','Raison refus','Contact','Poste','Téléphone','Email','LED','VIP','Bodega','Bâche','Autre','Total'];
+  const rows=db.companies.map(c=>{
+    const p=c.partnership||{};
+    return[c.name,c.saison||'',c.source||'',c.info?.zone||'',c.info?.sector||'',c.info?.size||'',STATUS[c.status]||c.status,c.raison_refus||'',c.contact?.name||'',c.contact?.role||'',c.contact?.phone||'',c.contact?.email||'',p.led||0,p.vip||0,p.bodega||0,p.bache||0,p.autre||0,totalPart(c)].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`);
+  });
+  const csv=[h,...rows].map(r=>r.join(';')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`FCRouen_CRM_${new Date().toLocaleDateString('fr-FR').replace(/\//g,'-')}.csv`;a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMPORT
+// ═══════════════════════════════════════════════════════════
+function openImport(){
+  const toImport = window.CRM_INITIAL_DATA ? window.CRM_INITIAL_DATA.filter(c=>!db.companies.find(x=>x.name.toLowerCase().replace(/[^a-z0-9]/g,'')===c.name.toLowerCase().replace(/[^a-z0-9]/g,''))).length : 0;
+  document.getElementById('m-import-body').innerHTML=`
+  ${toImport>0?`<div class="alert alert-info" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+    <div><strong>🚀 ${toImport} nouvelles entreprises</strong> prêtes à importer depuis vos fichiers CSV<br><span style="font-size:12px;opacity:.8">(prospects terrain + téléphone — doublons ignorés automatiquement)</span></div>
+    <button class="btn btn-primary" onclick="importAllData();closeModal('m-import')">⬆ Tout importer</button>
+  </div>`:''}
+  <div class="tabs">
+    <button class="tab active" onclick="switchImportTab('contracts',this)">📂 Contrats signés</button>
+    <button class="tab" onclick="switchImportTab('csv',this)">📋 Import CSV</button>
+  </div>
+  <div id="imp-contracts">
+    <p style="font-size:13.5px;color:var(--muted);margin-bottom:14px">Chargez vos <strong>${SIGNED_CONTRACTS.length} contrats signés</strong> de la saison 2025-2026 directement depuis vos fichiers.</p>
+    <div style="margin-bottom:14px;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+      <table style="min-width:100%">
+        <thead><tr><th>Entreprise</th><th>Secteur</th><th>LED</th><th>VIP</th><th>Bodega</th><th>Bâche</th><th>Total</th></tr></thead>
+        <tbody>
+          ${SIGNED_CONTRACTS.map(s=>{
+            const t=(+s.led||0)+(+s.vip||0)+(+s.bodega||0)+(+s.bache||0);
+            return`<tr><td class="td-name">${s.name}</td><td style="font-size:12px;color:var(--muted)">${s.sector}</td><td class="td-amt">${s.led>0?fmt(s.led):'—'}</td><td class="td-amt">${s.vip>0?fmt(s.vip):'—'}</td><td class="td-amt">${s.bodega>0?fmt(s.bodega):'—'}</td><td class="td-amt">${s.bache>0?fmt(s.bache):'—'}</td><td style="font-weight:700;color:var(--red)">${fmt(t)}</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-secondary" onclick="closeModal('m-import')">Annuler</button>
+      <button class="btn btn-primary" onclick="importSignedContracts()">⬆ Charger les contrats signés</button>
+    </div>
+  </div>
+  <div id="imp-csv" style="display:none">
+    <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Collez le contenu d'un fichier CSV (séparateur <strong>;</strong>). Colonnes attendues : <em>Nom;Notes/Statut;Contact;Adresse;Téléphone</em></p>
+    <textarea class="csv-area" id="csv-input" placeholder="Collez ici le contenu de votre CSV…"></textarea>
+    <div id="csv-preview"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-secondary" onclick="parseCSVPreview()">👁 Prévisualiser</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary" onclick="closeModal('m-import')">Annuler</button>
+        <button class="btn btn-primary" id="btn-import-csv" style="display:none" onclick="doImportCSV()">⬆ Importer</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('m-import').classList.add('open');
+}
+
+function switchImportTab(tab,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('imp-contracts').style.display=tab==='contracts'?'':'none';
+  document.getElementById('imp-csv').style.display=tab==='csv'?'':'none';
+}
+
+function importSignedContracts(){
+  let added=0;
+  SIGNED_CONTRACTS.forEach(s=>{
+    const exists=db.companies.find(c=>c.name.toLowerCase()===s.name.toLowerCase());
+    if(!exists){
+      db.companies.push({
+        id:genId(),name:s.name,status:'signe',saison:s.saison||'2025-2026',source:'',
+        info:{sector:s.sector,size:s.size||'',zone:'',notes:''},
+        contact:{name:'',role:'',phone:'',email:''},
+        partnership:{led:s.led||0,led_d:s.led_d||'',vip:s.vip||0,vip_d:s.vip_d||'',bodega:s.bodega||0,bodega_d:s.bodega_d||'',bache:s.bache||0,bache_d:s.bache_d||'',autre:s.autre||0,notes:s.notes||''},
+        history:[{date:new Date().toISOString(),type:'note',note:'Importé depuis fichier Contrats signés 2025-2026'}],
+        createdAt:new Date().toISOString()
+      });
+      added++;
+    }
+  });
+  saveDB();closeModal('m-import');render();
+  alert(`✅ ${added} entreprise(s) importée(s). ${SIGNED_CONTRACTS.length-added} déjà présente(s).`);
+}
+
+let parsedImportRows=[];
+
+function normalizeStatus(note){
+  if(!note||note.trim()==='')return'a_contacter';
+  const n=note.toLowerCase();
+  if(/^x[\s,;]|^x$/.test(n.trim()))return'perdu';
+  if(/ferm[eé]|n'existe plus|d[eé]finitivement/.test(n))return'perdu';
+  if(/contrat sign[eé]|partenaire|^oui$/.test(n))return'signe';
+  if(/rdv le|rdv \d|rdv mercredi|rdv lundi|rdv vendredi/.test(n))return'rdv_fixe';
+  if(/envoy[eé] (l'offre|la plaquette|mail)|j'ai envoy/.test(n))return'offre_envoyee';
+  if(/saison pro|saison prochaine|revenir en /.test(n))return'saison_pro';
+  if(/[àa] renouveler/.test(n))return'a_renouveler';
+  if(/relance|rappeler|recontacter|donn[eé] ma carte|j'ai donn[eé]|j'ai laiss[eé]/.test(n))return'contacte';
+  return'a_contacter';
+}
+
+function parseCSVPreview(){
+  const raw=document.getElementById('csv-input').value.trim();
+  if(!raw){alert('Collez un CSV d\'abord.');return}
+  const lines=raw.split('\n').filter(l=>l.trim()&&!l.startsWith('Fiche')&&!l.startsWith('Nom Partenaire')&&!l.startsWith('NOM')&&!l.match(/^;*(Semaine|Jeudi|Vendredi|Lundi|Mardi|Mercredi|Samedi|Dimanche|Lundi|Suite|PARC|Zone|VDR|Rouen|Mont|Petit|Grand|Maromme|Tourville|Technopole|Oissel|Sotteville)/i));
+  parsedImportRows=[];
+  lines.forEach(l=>{
+    const cols=l.split(';').map(c=>c.trim().replace(/^"|"$/g,''));
+    const name=cols[0]||cols[1]||'';
+    if(!name||name.length<2)return;
+    const noteRaw=cols[1]||cols[3]||cols[4]||'';
+    const contactRaw=cols[2]||cols[6]||'';
+    const phoneRaw=cols[8]||cols[5]||'';
+    const addrRaw=cols[7]||'';
+    const status=normalizeStatus(noteRaw);
+    // Skip "Aurélie" entries
+    if(/aurelie|aur[eé]lie/i.test(noteRaw+contactRaw))return;
+    parsedImportRows.push({name,status,note:noteRaw,contact:contactRaw,phone:phoneRaw,address:addrRaw});
+  });
+
+  const preview=parsedImportRows.slice(0,15);
+  document.getElementById('csv-preview').innerHTML=`
+  <div style="margin-top:10px;font-size:12px;color:var(--muted);margin-bottom:6px">${parsedImportRows.length} lignes détectées — aperçu des 15 premières :</div>
+  <div class="import-preview"><table>
+    <thead><tr><th>Nom</th><th>Statut détecté</th><th>Note d'origine</th><th>Contact</th></tr></thead>
+    <tbody>
+    ${preview.map(r=>{
+      const cl=r.status==='signe'?'ib-signe':r.status==='perdu'?'ib-perdu':r.status==='contacte'||r.status==='rdv_fixe'||r.status==='offre_envoyee'?'ib-contacte':'ib-other';
+      return`<tr><td style="font-weight:600">${r.name}</td><td><span class="import-badge ${cl}">${STATUS[r.status]||r.status}</span></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:var(--muted)">${r.note||'—'}</td><td style="font-size:11.5px">${r.contact||r.phone||'—'}</td></tr>`;
+    }).join('')}
+    </tbody>
+  </table></div>`;
+  document.getElementById('btn-import-csv').style.display='';
+}
+
+function doImportCSV(){
+  let added=0,skipped=0;
+  parsedImportRows.forEach(r=>{
+    const exists=db.companies.find(c=>c.name.toLowerCase()===r.name.toLowerCase());
+    if(exists){skipped++;return}
+    // Parse contact info
+    let phone='',email='';
+    const emailM=( r.contact+' '+r.phone).match(/[\w.-]+@[\w.-]+\.\w+/);
+    const phoneM=(r.contact+' '+r.phone).match(/(?:0|\+33)[0-9\s.]{9,14}/);
+    if(emailM)email=emailM[0];
+    if(phoneM)phone=phoneM[0].trim();
+    db.companies.push({
+      id:genId(),name:r.name,status:r.status,saison:'2025-2026',source:'terrain',
+      info:{sector:'',size:'',zone:'',address:r.address,notes:r.note||''},
+      contact:{name:'',role:'',phone,email},
+      partnership:{led:0,vip:0,bodega:0,bache:0,autre:0},
+      history:r.note?[{date:new Date().toISOString(),type:'note',note:r.note}]:[],
+      createdAt:new Date().toISOString()
+    });
+    added++;
+  });
+  saveDB();closeModal('m-import');render();
+  alert(`✅ ${added} entreprise(s) importée(s). ${skipped} doublon(s) ignoré(s).`);
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMPORT AUTOMATIQUE DONNÉES INITIALES
+// ═══════════════════════════════════════════════════════════
+function importAllData(){
+  if(!window.CRM_INITIAL_DATA){alert('Fichier initial-data.js introuvable.');return}
+  let added=0, skipped=0;
+  window.CRM_INITIAL_DATA.forEach(c=>{
+    const exists=db.companies.find(x=>x.name.toLowerCase().replace(/[^a-z0-9]/g,'')===c.name.toLowerCase().replace(/[^a-z0-9]/g,''));
+    if(exists){skipped++;return}
+    db.companies.push(c);
+    added++;
+  });
+  saveDB(); render();
+  alert(`✅ ${added} entreprises importées !\n${skipped} doublons ignorés.\n\nVos données sont maintenant dans le CRM.`);
+}
+
+// ═══════════════════════════════════════════════════════════
+// DEBOUNCE RECHERCHE
+// ═══════════════════════════════════════════════════════════
+let _searchTimer = null;
+function onSearchInput(val){
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => { searchQ = val; render(); }, 320);
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+function updateNotif(){
+  const n=db.events.filter(e=>!e.done&&(isOverdue(e.date)||isToday(e.date))).length;
+  document.getElementById('notif-dot').style.display=n>0?'block':'none';
+  // Badge relances dans sidebar
+  const relCount=getRelances().length;
+  const navRel=document.getElementById('nav-relances');
+  if(navRel){
+    const existing=navRel.querySelector('.nav-badge');
+    if(existing) existing.remove();
+    if(relCount>0) navRel.insertAdjacentHTML('beforeend',`<span class="nav-badge">${relCount}</span>`);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RELANCES — données
+// ═══════════════════════════════════════════════════════════
+function getRelances(){
+  const now=new Date();
+  const sevenDaysAgo=new Date(now-7*864e5);
+  const fourteenDaysAgo=new Date(now-14*864e5);
+  const results=[];
+
+  db.companies.forEach(c=>{
+    if(['perdu','saison_pro','signe'].includes(c.status)) return;
+    const overdueEvts=db.events.filter(e=>e.companyId===c.id&&!e.done&&isOverdue(e.date));
+    const todayEvts=db.events.filter(e=>e.companyId===c.id&&!e.done&&isToday(e.date));
+    const lastHistory=c.history?.slice(-1)[0];
+    const lastContact=lastHistory?new Date(lastHistory.date):new Date(c.createdAt||0);
+    let urgency=0, reason='';
+
+    if(overdueEvts.length>0){ urgency=3; reason=`⚠️ ${overdueEvts.length} rappel(s) en retard`; }
+    else if(todayEvts.length>0){ urgency=2; reason=`📅 Rappel aujourd'hui : ${todayEvts[0].title}`; }
+    else if(c.status==='offre_envoyee'&&lastContact<sevenDaysAgo){ urgency=2; reason=`📧 Offre envoyée sans réponse depuis +7j`; }
+    else if(c.status==='rdv_fixe'&&lastContact<sevenDaysAgo){ urgency=2; reason=`🤝 RDV fixé — relancer`; }
+    else if(c.status==='contacte'&&lastContact<fourteenDaysAgo){ urgency=1; reason=`🔁 Contacté il y a +14j — à relancer`; }
+
+    if(urgency>0) results.push({...c, urgency, reason});
+  });
+
+  return results.sort((a,b)=>b.urgency-a.urgency||a.name.localeCompare(b.name));
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW: RELANCES
+// ═══════════════════════════════════════════════════════════
+function vRelances(){
+  const list=getRelances();
+  const urgent=list.filter(c=>c.urgency===3);
+  const today=list.filter(c=>c.urgency===2);
+  const tofollow=list.filter(c=>c.urgency===1);
+
+  function renderCard(c){
+    const nid=`rn-${c.id}`;
+    return`<div style="background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;overflow:hidden">
+      <div style="padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openDetail('${c.id}')">
+        <div class="avatar">${initials(c.name)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13.5px">${c.name}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:1px">${c.reason}</div>
+          <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+            ${badgeS(c.status)}
+            ${c.info?.zone?`<span class="chip">${c.info.zone}</span>`:''}
+            ${c.contact?.phone?`<a href="tel:${c.contact.phone}" onclick="event.stopPropagation()" style="font-size:12px;color:var(--red);font-weight:600;text-decoration:none">📞 ${c.contact.phone}</a>`:''}
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openDetail('${c.id}')">Fiche</button>
+      </div>
+      <div style="padding:9px 16px 12px;background:#f8f9fb;border-top:1px solid var(--border);display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+        <input id="${nid}" type="text" placeholder="Note rapide (ex: laissé un message…)"
+          style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12.5px;outline:none;background:#fff;font-family:inherit"
+          onkeydown="if(event.key==='Enter')quickTraite('${c.id}','${nid}')">
+        <button class="btn btn-green btn-sm" onclick="quickTraite('${c.id}','${nid}')">✓ Traité</button>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-sm" onclick="quickReminder('${c.id}',3)" title="Planifier un rappel dans 3 jours">+3j</button>
+          <button class="btn btn-secondary btn-sm" onclick="quickReminder('${c.id}',7)" title="Planifier un rappel dans 7 jours">+7j</button>
+          <button class="btn btn-secondary btn-sm" onclick="quickReminder('${c.id}',14)" title="Planifier un rappel dans 14 jours">+14j</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function renderGroup(items,title,color){
+    if(!items.length) return'';
+    return`<div style="margin-bottom:24px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${color};margin-bottom:10px">${title} (${items.length})</div>
+      ${items.map(renderCard).join('')}
+    </div>`;
+  }
+
+  const manualRels=db.events.filter(e=>e.type==='relance'&&!e.done).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const header=`
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="chip" style="background:#fee2e2;border-color:#fca5a5;color:#dc2626">⚠️ En retard : ${urgent.length}</span>
+      <span class="chip" style="background:#fef3c7;border-color:#fcd34d;color:#b45309">📅 Aujourd'hui : ${today.length}</span>
+      <span class="chip">🔁 Auto : ${tofollow.length}</span>
+      ${manualRels.length?`<span class="chip" style="background:#ede9fe;border-color:#c4b5fd;color:#6d28d9">📌 Manuelles : ${manualRels.length}</span>`:''}
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openNewRelance()">+ Nouvelle relance</button>
+  </div>`;
+
+  const manualSection=manualRels.length?`<div style="margin-bottom:24px">
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6d28d9;margin-bottom:10px">📌 Relances planifiées (${manualRels.length})</div>
+    ${manualRels.map(e=>{
+      const c=db.companies.find(x=>x.id===e.companyId);
+      const ov=isOverdue(e.date), td=isToday(e.date);
+      const nid=`rn-m-${e.id}`;
+      return`<div style="background:#fff;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;overflow:hidden">
+        <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+          <div class="avatar" style="cursor:pointer" onclick="openDetail('${c?.id||''}')">${initials(c?.name||'?')}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13.5px">${c?.name||'Entreprise inconnue'}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:1px">${e.note||e.title||'Relance'}</div>
+            <div style="font-size:12px;font-weight:600;margin-top:3px;color:${ov?'var(--red)':td?'var(--orange)':'var(--muted)'}">
+              ${ov?'⚠️ En retard — ':td?'📅 Aujourd\'hui — ':'🗓 '}${fmtD(e.date)}
+            </div>
+          </div>
+          <button class="btn btn-green btn-sm" onclick="markDone('${e.id}');render();showToast('✅ Relance marquée faite')">✓ Fait</button>
+        </div>
+        <div style="padding:9px 16px 12px;background:#f8f9fb;border-top:1px solid var(--border);display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+          <input id="${nid}" type="text" placeholder="Note rapide…"
+            style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12.5px;outline:none;background:#fff;font-family:inherit"
+            onkeydown="if(event.key==='Enter')quickTraite('${c?.id||''}','${nid}')">
+          <button class="btn btn-secondary btn-sm" onclick="quickTraite('${c?.id||''}','${nid}')">✓ Traité</button>
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-secondary btn-sm" onclick="quickReminder('${c?.id||''}',3)">+3j</button>
+            <button class="btn btn-secondary btn-sm" onclick="quickReminder('${c?.id||''}',7)">+7j</button>
+            <button class="btn btn-secondary btn-sm" onclick="quickReminder('${c?.id||''}',14)">+14j</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`:'';
+
+  if(!list.length&&!manualRels.length) return`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+    <button class="btn btn-primary btn-sm" onclick="openNewRelance()">+ Nouvelle relance</button>
+  </div>
+  <div class="empty" style="padding:80px 20px"><div class="ei">✅</div><h3>Aucune relance en attente</h3><p>Tout est à jour !</p></div>`;
+
+  return`${header}${manualSection}
+  ${renderGroup(urgent,'⚠️ En retard','#dc2626')}
+  ${renderGroup(today,'📅 À traiter aujourd\'hui','#d97706')}
+  ${renderGroup(tofollow,'🔁 À relancer','#6b7280')}`;
+}
+
+function quickTraite(coId, inputId){
+  const input=document.getElementById(inputId);
+  const note=(input&&input.value.trim())||'Relancé';
+  const c=db.companies.find(x=>x.id===coId);
+  if(!c)return;
+  if(!c.history)c.history=[];
+  c.history.push({date:new Date().toISOString(),type:'relance',note});
+  saveDB();render();
+  showToast(`✅ Relance enregistrée — ${c.name}`);
+}
+
+function quickReminder(coId, days){
+  const d=new Date();
+  d.setDate(d.getDate()+days);
+  const c=db.companies.find(x=>x.id===coId);
+  db.events.push({id:genId(),companyId:coId,type:'rappel',title:`Relance — ${c?c.name:''}`,date:d.toISOString().slice(0,10),time:'',note:'',done:false,createdAt:new Date().toISOString()});
+  saveDB();render();
+  showToast(`📅 Rappel créé pour le ${d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`);
+}
+
+function quickLogRelance(coId){
+  const c=db.companies.find(x=>x.id===coId);
+  if(!c)return;
+  if(!c.history)c.history=[];
+  c.history.push({date:new Date().toISOString(),type:'relance',note:'Relancé'});
+  saveDB();render();
+  showToast(`✅ Relance enregistrée — ${c.name}`);
+}
+
+function forceSyncFirebase(){
+  const count=db.companies?.length||0;
+  if(!count){alert('Aucune donnée à synchroniser.');return;}
+  if(!confirm(`Envoyer ${count} entreprises vers Firebase ?`))return;
+  CRM_REF.set(db,err=>{
+    if(err)alert('Erreur de synchronisation : '+err.message);
+    else showToast(`☁️ ${count} entreprises synchronisées`);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// QUICK CALL LOG
+// ═══════════════════════════════════════════════════════════
+let _qlCoId=null;
+function openQuickLog(coId){
+  _qlCoId=coId;
+  const c=db.companies.find(x=>x.id===coId);if(!c)return;
+  document.getElementById('ql-title').textContent='📞 '+c.name;
+  document.getElementById('ql-coname').textContent=c.name+(c.contact?.name?' — '+c.contact.name:'');
+  document.getElementById('ql-costatus').textContent=(STATUS[c.status]||c.status)+(c.contact?.phone?' · '+c.contact.phone:'');
+  document.getElementById('ql-status').innerHTML='<option value="">— Inchangé —</option>'+Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${c.status===k?'selected':''}>${v}</option>`).join('');
+  document.getElementById('ql-type').value='appel';
+  document.getElementById('ql-note').value='';
+  document.getElementById('ql-remind').checked=false;
+  document.getElementById('ql-rdv-fields').style.display='none';
+  ['ql-objections','ql-budget','ql-nextstep'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('ql-type').onchange=function(){
+    document.getElementById('ql-rdv-fields').style.display=this.value==='rdv'?'flex':'none';
+  };
+  document.getElementById('m-quicklog').classList.add('open');
+  setTimeout(()=>document.getElementById('ql-note').focus(),120);
+}
+
+function saveCallLog(){
+  const note=document.getElementById('ql-note').value.trim();
+  if(!note){alert('Entrez une note.');return}
+  const c=db.companies.find(x=>x.id===_qlCoId);if(!c)return;
+  const type=document.getElementById('ql-type').value;
+  const newStatus=document.getElementById('ql-status').value;
+  if(!c.history)c.history=[];
+  // Build enriched note for RDV
+  let fullNote=note;
+  if(type==='rdv'){
+    const obj=document.getElementById('ql-objections')?.value.trim();
+    const budget=document.getElementById('ql-budget')?.value;
+    const next=document.getElementById('ql-nextstep')?.value.trim();
+    if(obj)fullNote+=` | Objections: ${obj}`;
+    if(budget)fullNote+=` | Budget évoqué: ${fmt(budget)}`;
+    if(next)fullNote+=` | Prochaine étape: ${next}`;
+  }
+  c.history.push({date:new Date().toISOString(),type,note:fullNote});
+  if(newStatus){c.status=newStatus;c.updatedAt=new Date().toISOString();}
+  if(document.getElementById('ql-remind').checked){
+    const days=parseInt(document.getElementById('ql-remind-days').value)||3;
+    const d=new Date();d.setDate(d.getDate()+days);
+    db.events.push({id:genId(),companyId:_qlCoId,type:'rappel',title:`Relance — ${c.name}`,date:d.toISOString().slice(0,10),done:false,createdAt:new Date().toISOString()});
+  }
+  saveDB();closeModal('m-quicklog');showToast(`✅ ${TYPE_ICONS[type]||'📝'} Enregistré — ${c.name}`);
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOUVELLE RELANCE (modal m-relance)
+// ═══════════════════════════════════════════════════════════
+function openNewRelance(coId){
+  const sel=document.getElementById('rel-co');
+  sel.innerHTML='<option value="">— Sélectionner —</option>'+db.companies.map(c=>`<option value="${c.id}" ${c.id===coId?'selected':''}>${c.name}</option>`).join('');
+  document.getElementById('rel-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('rel-note').value='';
+  document.getElementById('m-relance').classList.add('open');
+}
+function saveRelance(){
+  const coId=document.getElementById('rel-co').value;
+  const date=document.getElementById('rel-date').value;
+  const note=document.getElementById('rel-note').value.trim();
+  if(!coId||!date){alert('Entreprise et date requises.');return}
+  const c=db.companies.find(x=>x.id===coId);
+  db.events.push({id:genId(),companyId:coId,type:'relance',title:`Relance — ${c?c.name:''}`,date,note,done:false,createdAt:new Date().toISOString()});
+  saveDB();closeModal('m-relance');showToast('📌 Relance planifiée');
+}
+
+// ═══════════════════════════════════════════════════════════
+// RECHERCHE GLOBALE
+// ═══════════════════════════════════════════════════════════
+function onGlobalSearch(q){
+  const el=document.getElementById('gsearch-results');
+  if(!el)return;
+  if(!q||q.length<2){el.innerHTML='';el.classList.remove('open');return}
+  const ql=q.toLowerCase();
+  const hits=[];
+  db.companies.forEach(c=>{
+    let match='';
+    if(c.name?.toLowerCase().includes(ql)) match=c.name;
+    else if(c.contact?.name?.toLowerCase().includes(ql)) match='Contact: '+c.contact.name;
+    else if(c.contact?.phone?.includes(q)) match='Tél: '+c.contact.phone;
+    else if(c.contact?.email?.toLowerCase().includes(ql)) match='Email: '+c.contact.email;
+    else if(c.info?.notes?.toLowerCase().includes(ql)) match='Notes';
+    else if((c.history||[]).some(h=>h.note?.toLowerCase().includes(ql))) match='Historique';
+    else if(c.info?.sector?.toLowerCase().includes(ql)) match='Secteur: '+c.info.sector;
+    if(match) hits.push({c,match});
+  });
+  if(!hits.length){el.innerHTML='<div style="padding:12px;text-align:center;font-size:12.5px;color:var(--muted)">Aucun résultat</div>';el.classList.add('open');return}
+  el.innerHTML=hits.slice(0,8).map(({c,match})=>`
+    <div class="gsearch-item" onclick="document.getElementById('gsearch-input').value='';hideGsearchResults();openDetail('${c.id}')">
+      <div class="avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0">${initials(c.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+        <div class="gsearch-match">${match}</div>
+      </div>
+      ${badgeS(c.status)}
+    </div>`).join('');
+  el.classList.add('open');
+}
+function showGsearchResults(){const el=document.getElementById('gsearch-results');if(el&&el.children.length)el.classList.add('open')}
+function hideGsearchResults(){document.getElementById('gsearch-results')?.classList.remove('open')}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c1f2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:opacity .3s;white-space:nowrap';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300)},2200);
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW: STATISTIQUES
+// ═══════════════════════════════════════════════════════════
+function vStats(){
+  const cos=db.companies;
+  const signed=cos.filter(c=>c.status==='signe');
+  const totalCA=signed.reduce((s,c)=>s+totalPart(c),0);
+  const totalPipeline=cos.filter(c=>!['perdu'].includes(c.status)).reduce((s,c)=>s+totalPart(c),0);
+  const totalProspects=cos.filter(c=>!['perdu','saison_pro'].includes(c.status)).length;
+  const convRate=totalProspects>0?(signed.length/totalProspects*100).toFixed(1):0;
+
+  // CA par type offre
+  const byOffer={
+    'LED':     signed.reduce((s,c)=>s+(+c.partnership?.led||0),0),
+    'VIP':     signed.reduce((s,c)=>s+(+c.partnership?.vip||0),0),
+    'Bodega':  signed.reduce((s,c)=>s+(+c.partnership?.bodega||0),0),
+    'Bâche':   signed.reduce((s,c)=>s+(+c.partnership?.bache||0),0),
+    'Autre':   signed.reduce((s,c)=>s+(+c.partnership?.autre||0),0),
+  };
+
+  // CA par zone
+  const byZone={};
+  signed.forEach(c=>{const z=c.info?.zone||'Non défini';byZone[z]=(byZone[z]||0)+totalPart(c)});
+  const zoneEntries=Object.entries(byZone).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // CA par secteur
+  const bySector={};
+  signed.forEach(c=>{const s=c.info?.sector||'Non défini';bySector[s]=(bySector[s]||0)+totalPart(c)});
+  const sectorEntries=Object.entries(bySector).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  // Statuts
+  const byStatus={};
+  cos.forEach(c=>{byStatus[c.status]=(byStatus[c.status]||0)+1});
+
+  function barChart(entries,total,colors){
+    if(!entries.length||!total) return`<div style="color:var(--muted);font-size:13px;padding:10px 0">Aucune donnée</div>`;
+    return entries.map(([label,val],i)=>{
+      const pct=total>0?Math.round(val/total*100):0;
+      const col=colors[i%colors.length];
+      return`<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12.5px;font-weight:600">${label}</span>
+          <span style="font-size:12.5px;color:var(--muted)">${fmt(val)} <span style="color:var(--muted);font-size:11px">(${pct}%)</span></span>
+        </div>
+        <div style="background:var(--bg);border-radius:20px;height:8px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${col};border-radius:20px;transition:width .4s"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const offerColors=['#c8102e','#2563eb','#d97706','#7c3aed','#16a34a'];
+  const zoneColors=['#c8102e','#ef4444','#f97316','#eab308','#84cc16','#22c55e','#06b6d4','#8b5cf6'];
+
+  // Entonnoir de conversion
+  const fTotal=cos.filter(c=>!['perdu','saison_pro'].includes(c.status)).length;
+  const fContacte=cos.filter(c=>['contacte','offre_envoyee','rdv_fixe','signe'].includes(c.status)).length;
+  const fOffre=cos.filter(c=>['offre_envoyee','rdv_fixe','signe'].includes(c.status)).length;
+  const fRdv=cos.filter(c=>['rdv_fixe','signe'].includes(c.status)).length;
+  const fSigne=cos.filter(c=>c.status==='signe').length;
+  const funnel=[
+    {label:'Prospects actifs',count:fTotal,color:'#6b7280'},
+    {label:'Contactés',count:fContacte,color:'#2563eb'},
+    {label:'Offre envoyée',count:fOffre,color:'#d97706'},
+    {label:'RDV fixé',count:fRdv,color:'#7c3aed'},
+    {label:'✓ Signés',count:fSigne,color:'#16a34a'},
+  ];
+
+  // Raisons de refus
+  const refusCount={};
+  cos.filter(c=>c.status==='perdu'&&c.raison_refus).forEach(c=>refusCount[c.raison_refus]=(refusCount[c.raison_refus]||0)+1);
+  const refusEntries=Object.entries(refusCount).sort((a,b)=>b[1]-a[1]);
+  const REFUS_LABELS={budget:'💰 Budget',pas_interesse:'🚫 Pas intéressé',pas_decideur:'👤 Pas décisionnaire',concurrent:'⚔️ Concurrent',timing:'⏰ Mauvais timing',autre:'📝 Autre'};
+
+  return`
+  <!-- KPIs -->
+  <div class="stats-grid" style="margin-bottom:24px">
+    <div class="stat-card"><div class="s-label">CA signé saison</div><div class="s-val c-red">${fmt(totalCA)}</div><div class="s-sub">${signed.length} partenaires</div></div>
+    <div class="stat-card"><div class="s-label">Pipeline actif</div><div class="s-val c-orange">${fmt(totalPipeline)}</div><div class="s-sub">Hors perdus</div></div>
+    <div class="stat-card"><div class="s-label">Taux de conversion</div><div class="s-val c-green">${convRate}%</div><div class="s-sub">${signed.length} signés / ${totalProspects} actifs</div></div>
+    <div class="stat-card"><div class="s-label">Total prospects</div><div class="s-val">${cos.length}</div><div class="s-sub">${cos.filter(c=>c.status==='perdu').length} perdus</div></div>
+  </div>
+
+  <!-- Entonnoir -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <div class="card">
+      <div class="card-header"><h2>📊 Entonnoir de conversion</h2></div>
+      <div class="card-body">
+        ${funnel.map((f,i)=>{
+          const pct=fTotal>0?Math.round(f.count/fTotal*100):0;
+          const prev=i>0?funnel[i-1].count:null;
+          const convPct=prev&&prev>0?Math.round(f.count/prev*100):null;
+          return`<div class="funnel-step">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:13px;font-weight:600">${f.label}</span>
+              <div style="display:flex;align-items:center;gap:8px">
+                ${convPct!==null?`<span style="font-size:11px;color:var(--muted)">↳ ${convPct}%</span>`:''}
+                <span style="font-size:14px;font-weight:800;color:${f.color}">${f.count}</span>
+              </div>
+            </div>
+            <div class="funnel-bar"><div class="funnel-fill" style="width:${pct}%;background:${f.color}"></div></div>
+          </div>
+          ${i<funnel.length-1?`<div class="funnel-arrow">↓ ${funnel[i+1].count>0&&f.count>0?Math.round(funnel[i+1].count/f.count*100)+'% passent à l\'étape suivante':'—'}</div>`:''}`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>❌ Raisons de refus</h2></div>
+      <div class="card-body">
+        ${refusEntries.length===0?`<div class="empty" style="padding:20px"><div class="ei">✅</div><p>Aucun refus catégorisé</p><p style="font-size:11.5px;margin-top:4px">Remplissez la "Raison de refus" sur les fiches Perdu</p></div>`:
+        refusEntries.map(([k,n])=>{
+          const pct=cos.filter(c=>c.status==='perdu').length>0?Math.round(n/cos.filter(c=>c.status==='perdu').length*100):0;
+          return`<div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:12.5px;font-weight:600">${REFUS_LABELS[k]||k}</span>
+              <span style="font-size:12.5px;font-weight:700">${n} <span style="color:var(--muted);font-size:11px">(${pct}%)</span></span>
+            </div>
+            <div style="background:var(--bg);border-radius:20px;height:7px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:#dc2626;border-radius:20px"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+    <!-- CA par offre -->
+    <div class="card">
+      <div class="card-header"><h2>CA par type d'offre</h2></div>
+      <div class="card-body">
+        ${barChart(Object.entries(byOffer).filter(([,v])=>v>0),totalCA,offerColors)}
+        ${!totalCA?`<div class="empty" style="padding:20px"><div class="ei">💰</div><p>Pas encore de CA signé</p></div>`:''}
+      </div>
+    </div>
+    <!-- CA par zone -->
+    <div class="card">
+      <div class="card-header"><h2>CA par zone géographique</h2></div>
+      <div class="card-body">
+        ${barChart(zoneEntries,totalCA,zoneColors)}
+        ${!zoneEntries.length?`<div class="empty" style="padding:20px"><div class="ei">📍</div><p>Aucune zone renseignée</p></div>`:''}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <!-- CA par secteur -->
+    <div class="card">
+      <div class="card-header"><h2>CA par secteur</h2></div>
+      <div class="card-body">
+        ${barChart(sectorEntries,totalCA,offerColors)}
+        ${!sectorEntries.length?`<div class="empty" style="padding:20px"><div class="ei">🏭</div><p>Aucun secteur renseigné</p></div>`:''}
+      </div>
+    </div>
+    <!-- Répartition statuts -->
+    <div class="card">
+      <div class="card-header"><h2>Répartition par statut</h2></div>
+      <div class="card-body">
+        ${Object.entries(STATUS).map(([k,v])=>{
+          const n=byStatus[k]||0;
+          const pct=cos.length>0?Math.round(n/cos.length*100):0;
+          return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+            ${badgeS(k)}
+            <div style="flex:1;background:var(--bg);border-radius:20px;height:7px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:var(--red);border-radius:20px"></div>
+            </div>
+            <span style="font-size:12px;font-weight:700;min-width:28px;text-align:right">${n}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW: OBJECTIFS
+// ═══════════════════════════════════════════════════════════
+function vObjectifs(){
+  const obj=db.objectif||{target:50000,saison:'2025-2026',calls_week:30};
+  const signed=db.companies.filter(c=>c.status==='signe');
+  const ca=signed.reduce((s,c)=>s+totalPart(c),0);
+  const pct=obj.target>0?Math.min(Math.round(ca/obj.target*100),100):0;
+  const remain=Math.max(obj.target-ca,0);
+  const led=signed.reduce((s,c)=>s+(+c.partnership?.led||0),0);
+  const vip=signed.reduce((s,c)=>s+(+c.partnership?.vip||0),0);
+  const bodega=signed.reduce((s,c)=>s+(+c.partnership?.bodega||0),0);
+  const bache=signed.reduce((s,c)=>s+(+c.partnership?.bache||0),0);
+  const autre=signed.reduce((s,c)=>s+(+c.partnership?.autre||0),0);
+
+  // Color based on progress
+  const barColor=pct>=100?'#16a34a':pct>=60?'#d97706':'#c8102e';
+
+  return`
+  <div style="max-width:720px;margin:0 auto">
+    <!-- Définir objectif -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><h2>🎯 Objectif CA — Saison ${obj.saison}</h2></div>
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div class="fg" style="flex:1;min-width:200px">
+            <label>Objectif CA (€)</label>
+            <input type="number" id="obj-target" value="${obj.target}" placeholder="50000" style="font-size:18px;font-weight:700">
+          </div>
+          <div class="fg" style="min-width:140px">
+            <label>Saison</label>
+            <select id="obj-saison">
+              ${['2025-2026','2026-2027','2024-2025'].map(s=>`<option ${obj.saison===s?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </div>
+          <div class="fg" style="min-width:140px">
+            <label>Appels / semaine</label>
+            <input type="number" id="obj-calls" value="${obj.calls_week||30}" placeholder="30" min="1" max="200">
+          </div>
+          <button class="btn btn-primary" style="margin-top:16px" onclick="saveObjectif()">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progression -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><h2>Progression</h2></div>
+      <div class="card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px">
+          <div>
+            <div style="font-size:36px;font-weight:800;color:${barColor}">${fmt(ca)}</div>
+            <div style="font-size:13px;color:var(--muted)">sur ${fmt(obj.target)} d'objectif</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:28px;font-weight:800;color:${barColor}">${pct}%</div>
+            <div style="font-size:12px;color:var(--muted)">${remain>0?fmt(remain)+' restants':'Objectif atteint ! 🎉'}</div>
+          </div>
+        </div>
+        <div style="background:var(--bg);border-radius:20px;height:18px;overflow:hidden;margin-bottom:8px">
+          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:20px;transition:width .6s;position:relative">
+            ${pct>10?`<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:#fff">${pct}%</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)">
+          <span>0 €</span><span>${fmt(obj.target/2)}</span><span>${fmt(obj.target)}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Détail par offre -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><h2>Détail CA signé par offre</h2></div>
+      <div class="card-body">
+        ${[['💡 LED',led],['🏆 VIP',vip],['🍺 Bodega',bodega],['📌 Bâche',bache],['Autre',autre]].filter(([,v])=>v>0).map(([l,v])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13.5px;font-weight:600">${l}</span>
+            <div style="text-align:right">
+              <span style="font-size:14px;font-weight:800;color:var(--red)">${fmt(v)}</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:6px">${obj.target>0?Math.round(v/obj.target*100):0}% obj.</span>
+            </div>
+          </div>`).join('')}
+        ${!ca?`<div style="color:var(--muted);font-size:13px;padding:10px 0">Aucun CA signé pour l'instant</div>`:''}
+      </div>
+    </div>
+
+    <!-- Top partenaires -->
+    <div class="card">
+      <div class="card-header"><h2>Top partenaires signés</h2></div>
+      <div class="tbl-wrap">
+        ${signed.length===0?`<div class="empty" style="padding:30px"><div class="ei">🏆</div><p>Aucun partenaire signé</p></div>`:`
+        <table>
+          <thead><tr><th>#</th><th>Entreprise</th><th>Secteur</th><th style="text-align:right">Montant</th><th style="text-align:right">% du CA</th></tr></thead>
+          <tbody>
+          ${[...signed].sort((a,b)=>totalPart(b)-totalPart(a)).slice(0,10).map((c,i)=>`
+            <tr onclick="openDetail('${c.id}')" style="cursor:pointer">
+              <td style="font-weight:700;color:var(--muted);font-size:13px">${i+1}</td>
+              <td><div class="td-name">${c.name}</div></td>
+              <td style="font-size:12.5px;color:var(--muted)">${c.info?.sector||'—'}</td>
+              <td style="text-align:right" class="td-amt">${fmt(totalPart(c))}</td>
+              <td style="text-align:right;font-size:12.5px;color:var(--muted)">${ca>0?Math.round(totalPart(c)/ca*100):0}%</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveObjectif(){
+  const t=parseInt(document.getElementById('obj-target').value)||0;
+  const s=document.getElementById('obj-saison').value;
+  const calls=parseInt(document.getElementById('obj-calls')?.value)||30;
+  db.objectif={...db.objectif,target:t,saison:s,calls_week:calls};
+  saveDB();render();showToast('✅ Objectifs enregistrés');
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW: ACTIVITÉ GLOBALE
+// ═══════════════════════════════════════════════════════════
+function vActivite(){
+  let fltType=window._actFlt||'';
+  const allLogs=[];
+  db.companies.forEach(c=>{
+    (c.history||[]).forEach(h=>allLogs.push({...h,company:c}));
+  });
+  allLogs.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const filtered=fltType?allLogs.filter(h=>h.type===fltType):allLogs;
+  const counts={};
+  allLogs.forEach(h=>counts[h.type]=(counts[h.type]||0)+1);
+
+  return`
+  <div class="toolbar" style="margin-bottom:14px">
+    <div style="font-size:13px;color:var(--muted)">${allLogs.length} interactions au total</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:auto">
+      ${['','appel','email','rdv','relance','note'].map(t=>
+        `<button class="btn btn-sm ${fltType===t?'btn-primary':'btn-secondary'}" onclick="window._actFlt='${t}';render()">
+          ${t?TYPE_ICONS[t]+' '+(t.charAt(0).toUpperCase()+t.slice(1))+(counts[t]?' ('+counts[t]+')':''):'Tous ('+allLogs.length+')'}
+        </button>`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    ${filtered.length===0?`<div class="empty" style="padding:50px 20px"><div class="ei">📋</div><h3>Aucune activité</h3><p>Commencez à logger vos appels depuis la vue Entreprises</p></div>`:`
+    <div>
+      ${filtered.slice(0,100).map(h=>`
+        <div class="feed-item" onclick="openDetail('${h.company.id}')" style="cursor:pointer">
+          <div class="feed-ico">${TYPE_ICONS[h.type]||'📝'}</div>
+          <div style="flex:1;min-width:0">
+            <div class="feed-co">${h.company.name} <span style="font-weight:400;color:var(--muted);font-size:12px">· ${h.type}</span></div>
+            <div class="feed-note">${h.note||'—'}</div>
+          </div>
+          <div class="feed-date">${fmtD(h.date)}</div>
+        </div>`).join('')}
+      ${filtered.length>100?`<div style="text-align:center;padding:12px;font-size:12.5px;color:var(--muted)">Affichage des 100 derniers sur ${filtered.length}</div>`:''}
+    </div>`}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIEW: MODÈLES DE MESSAGES
+// ═══════════════════════════════════════════════════════════
+function vMessages(){
+  return`
+  <div style="max-width:780px">
+    <div class="alert alert-info" style="margin-bottom:20px">
+      💡 Remplacez les variables <strong>{PRENOM}</strong>, <strong>{MON_PRENOM}</strong>, <strong>{ELEMENTS_A_ENVOYER}</strong> avant d'envoyer. Cliquez <strong>Copier</strong> puis collez dans WhatsApp, SMS ou email.
+    </div>
+    ${MSG_TEMPLATES.map(t=>`
+    <div class="tpl-card">
+      <h4>${t.title}
+        <button class="btn btn-primary btn-sm" onclick="copyTemplate('${t.id}')">📋 Copier</button>
+      </h4>
+      <div class="tpl-ctx">Contexte : ${t.ctx}</div>
+      <div class="tpl-body" id="tpl-${t.id}">${t.body.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="tpl-vars">Variables : {PRENOM} {MON_PRENOM} {ELEMENTS_A_ENVOYER}</div>
+    </div>`).join('')}
+
+    <div class="card" style="margin-top:24px">
+      <div class="card-header"><h2>Modèle personnalisé</h2></div>
+      <div class="card-body">
+        <div class="fg" style="margin-bottom:10px"><label>Titre</label><input id="custom-tpl-title" type="text" placeholder="Ex: Relance Bodega"></div>
+        <div class="fg"><label>Corps du message</label><textarea id="custom-tpl-body" style="min-height:120px" placeholder="Votre message…"></textarea></div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px" onclick="copyCustomTemplate()">📋 Copier ce message</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function copyTemplate(id){
+  const t=MSG_TEMPLATES.find(x=>x.id===id);
+  if(!t)return;
+  navigator.clipboard.writeText(t.body).then(()=>showToast('📋 Message copié dans le presse-papiers')).catch(()=>{
+    const el=document.getElementById('tpl-'+id);
+    if(el){const r=document.createRange();r.selectNodeContents(el);window.getSelection().removeAllRanges();window.getSelection().addRange(r);document.execCommand('copy');showToast('📋 Message copié');}
+  });
+}
+
+function copyCustomTemplate(){
+  const body=document.getElementById('custom-tpl-body')?.value.trim();
+  if(!body){alert('Entrez un message d\'abord.');return;}
+  navigator.clipboard.writeText(body).then(()=>showToast('📋 Message copié')).catch(()=>showToast('Sélectionnez et copiez manuellement'));
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════════════
+function closeModal(id){document.getElementById(id).classList.remove('open');editingId=null;render()}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(o=>closeModal(o.id))});
+
+// ═══════════════════════════════════════════════════════════
+// MOBILE SIDEBAR
+// ═══════════════════════════════════════════════════════════
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('open')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open')}
+
+// ═══════════════════════════════════════════════════════════
+// INIT — Firebase listener temps réel
+// ═══════════════════════════════════════════════════════════
+// Mode hors-ligne : affichage instantané depuis le cache localStorage
+try{
+  const local=localStorage.getItem('elliot_crm_v2');
+  if(local){const parsed=JSON.parse(local);if(parsed?.companies?.length){db=parsed;if(!db.events)db.events=[];}}
+}catch(e){}
+
+if(db.companies.length){
+  render();updateNotif();
+} else {
+  document.getElementById('content').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);font-size:15px">⏳ Connexion à la base de données…</div>';
+}
+
+let _fbInit=false;
+CRM_REF.on('value', snapshot=>{
+  const data=snapshot.val();
+  if(data){
+    db=data;
+    if(!db.companies)db.companies=[];
+    if(!db.events)db.events=[];
+  } else if(!_fbInit){
+    // Base vide — migration automatique depuis localStorage si données existantes
+    try{
+      const local=localStorage.getItem('elliot_crm_v2');
+      if(local){
+        const parsed=JSON.parse(local);
+        if(parsed?.companies?.length){
+          db=parsed;
+          CRM_REF.set(db);
+          showToast('✅ Données migrées vers le cloud');
+        }
+      }
+    }catch(e){}
+  }
+  _fbInit=true;
+  render();
+  updateNotif();
+});
+</script>
+</body>
+</html>
